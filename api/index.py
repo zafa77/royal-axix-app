@@ -19,11 +19,9 @@ SCOPES = [
     "https://www.googleapis.com/auth/drive",
 ]
 
-# Cache
 _inventory_cache = None
 _product_map_cache = None
 
-# ── Text normalization ─────────────────────────────────────
 def normalize(text):
     if not text:
         return ""
@@ -62,7 +60,6 @@ def fuzzy_match(query, candidates, threshold=0.55):
         return best_match, best_score
     return None, 0.0
 
-# ── Google Sheets ──────────────────────────────────────────
 def get_client():
     creds = Credentials.from_service_account_info(GOOGLE_CREDENTIALS, scopes=SCOPES)
     return gspread.authorize(creds)
@@ -72,11 +69,6 @@ def get_sheet(name="Inventar"):
     sh = client.open_by_key(SHEET_ID)
     return sh.worksheet(name)
 
-def get_workbook():
-    client = get_client()
-    return client.open_by_key(SHEET_ID)
-
-# ── Load Product Map from "Produse" sheet ──────────────────
 def load_product_map():
     global _product_map_cache
     ws = get_sheet("Produse")
@@ -84,11 +76,9 @@ def load_product_map():
     product_map = {}
     for i, row in enumerate(all_data):
         if i == 0:
-            continue  # skip header
+            continue
         if len(row) >= 2 and row[0].strip() and row[1].strip():
-            cod = str(row[0]).strip()
-            nume = str(row[1]).strip()
-            product_map[cod] = nume
+            product_map[str(row[0]).strip()] = str(row[1]).strip()
     _product_map_cache = product_map
     return product_map
 
@@ -98,7 +88,6 @@ def get_product_map():
         load_product_map()
     return _product_map_cache
 
-# ── Load Inventory from "Inventar" sheet ───────────────────
 def load_inventory():
     global _inventory_cache
     ws = get_sheet("Inventar")
@@ -153,9 +142,7 @@ def build_inventory_context():
             lines.append(f"  {cod} | {data['nume']} | {dim} | Arome: {aroma_str}")
     return "\n".join(lines)
 
-# ── Istoric (Log) ──────────────────────────────────────────
 def ensure_istoric_headers():
-    """Make sure Istoric sheet has headers."""
     try:
         ws = get_sheet("Istoric")
         first_row = ws.row_values(1)
@@ -165,7 +152,6 @@ def ensure_istoric_headers():
         pass
 
 def log_to_istoric(sursa, nr_factura, produse, rezultate):
-    """Append a row to Istoric sheet."""
     try:
         ensure_istoric_headers()
         ws = get_sheet("Istoric")
@@ -181,7 +167,6 @@ def log_to_istoric(sursa, nr_factura, produse, rezultate):
         print(f"Eroare log Istoric: {e}")
 
 def get_istoric():
-    """Get all rows from Istoric sheet."""
     try:
         ws = get_sheet("Istoric")
         all_data = ws.get_all_values()
@@ -190,19 +175,16 @@ def get_istoric():
         headers = all_data[0]
         rows = []
         for row in all_data[1:]:
-            # Pad row if needed
             while len(row) < len(headers):
                 row.append("")
             rows.append(dict(zip(headers, row)))
-        return list(reversed(rows))  # Most recent first
+        return list(reversed(rows))
     except Exception as e:
         return []
 
-# ── PDF Extraction ─────────────────────────────────────────
 def extract_invoice_data(pdf_base64):
     product_map = get_product_map()
     product_map_str = "\n".join([f"{cod} = {nume}" for cod, nume in product_map.items()])
-
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     response = client.messages.create(
         model="claude-sonnet-4-5",
@@ -212,11 +194,7 @@ def extract_invoice_data(pdf_base64):
             "content": [
                 {
                     "type": "document",
-                    "source": {
-                        "type": "base64",
-                        "media_type": "application/pdf",
-                        "data": pdf_base64,
-                    }
+                    "source": {"type": "base64", "media_type": "application/pdf", "data": pdf_base64}
                 },
                 {
                     "type": "text",
@@ -244,8 +222,8 @@ Produse cunoscute (cod → nume):
 {product_map_str}
 
 Reguli:
-- Extrage codul numeric din denumirea produsului (ex: 2401, 4001, 3101 etc.)
-- Pentru aromă: dacă e menționată EXPLICIT în denumire (ex: LILIAC, SPRING, OCEAN), pune aroma și setează aroma_auto: true
+- Extrage codul numeric din denumirea produsului
+- Pentru aromă: dacă e menționată EXPLICIT în denumire, pune aroma și aroma_auto: true
 - Dacă aroma NU e menționată, pune aroma: null și aroma_auto: false
 - Pentru dimensiune: extrage exact (750ML, 1L, 5L etc.)
 - cantitate = numărul întreg de bucăți"""
@@ -253,12 +231,10 @@ Reguli:
             ]
         }]
     )
-
     raw = response.content[0].text.strip()
     raw = re.sub(r"```json|```", "", raw).strip()
     return json.loads(raw)
 
-# ── Chat Processing ────────────────────────────────────────
 def process_chat(history, existing_products):
     product_map = get_product_map()
     product_map_str = "\n".join([f"{cod} = {nume}" for cod, nume in product_map.items()])
@@ -266,10 +242,8 @@ def process_chat(history, existing_products):
 
     existing_context = ""
     if existing_products:
-        lines = []
-        for p in existing_products:
-            lines.append(f"  - {p.get('cod','?')} | {p.get('nume','?')} | {p.get('aroma','—')} | {p.get('dimensiune','?')} | {p.get('cantitate','?')} buc")
-        existing_context = f"Produse deja în tabel (din factură PDF):\n" + "\n".join(lines) + "\n\nUtilizatorul vrea să ADAUGE produse noi la acestea."
+        lines = [f"  - {p.get('cod','?')} | {p.get('nume','?')} | {p.get('aroma','—')} | {p.get('dimensiune','?')} | {p.get('cantitate','?')} buc" for p in existing_products]
+        existing_context = "Produse deja în tabel (din factură PDF):\n" + "\n".join(lines) + "\n\nUtilizatorul vrea să ADAUGE produse noi la acestea."
     else:
         existing_context = "Tabelul este gol — utilizatorul introduce produse de la zero."
 
@@ -296,7 +270,6 @@ TOLERANȚĂ:
 - "floral" = "Floral" = "FLORAL" ✓
 - "fara parfum" = "Fără parfum" ✓
 - "trandafr" ≈ "Trandafir" ✓
-- "jasmim vanila" ≈ "Jasmin Vanilla" ✓
 
 CÂND UTILIZATORUL CONFIRMĂ, răspunde EXACT în acest format (nimic altceva):
 CONFIRMED
@@ -311,7 +284,6 @@ Folosește aroma EXACTĂ din inventar. Altfel răspunde normal, concis, în rom�
         system=system_prompt,
         messages=history
     )
-
     reply_raw = response.content[0].text.strip()
 
     if reply_raw.startswith("CONFIRMED"):
@@ -319,7 +291,6 @@ Folosește aroma EXACTĂ din inventar. Altfel răspunde normal, concis, în rom�
             json_part = reply_raw[len("CONFIRMED"):].strip()
             parsed = json.loads(json_part)
             produse = parsed.get("produse", [])
-
             corrected = []
             warnings = []
             for p in produse:
@@ -335,95 +306,59 @@ Folosește aroma EXACTĂ din inventar. Altfel răspunde normal, concis, în rom�
                         warnings.append(f"Aroma '{aroma_raw}' negăsită pentru {p.get('nume')} {dim_raw}")
                 corrected.append(p)
 
-            lines = []
-            for p in corrected:
-                lines.append(f"• <strong>{p.get('cantitate')} buc</strong> — {p.get('nume','?')} {p.get('dimensiune','')} <em>{p.get('aroma','')}</em>")
-
-            warn_html = ""
-            if warnings:
-                warn_html = "<br><br>⚠️ <strong>Atenție:</strong> " + "; ".join(warnings)
-
+            lines = [f"• <strong>{p.get('cantitate')} buc</strong> — {p.get('nume','?')} {p.get('dimensiune','')} <em>{p.get('aroma','')}</em>" for p in corrected]
+            warn_html = ("<br><br>⚠️ <strong>Atenție:</strong> " + "; ".join(warnings)) if warnings else ""
             friendly_html = (
                 f"✅ Am adăugat <strong>{len(corrected)} {'rând' if len(corrected)==1 else 'rânduri'}</strong> în tabel:<br><br>"
-                + "<br>".join(lines)
-                + warn_html
+                + "<br>".join(lines) + warn_html
                 + "<br><br>Poți vedea tabelul în tab-ul <strong>Factură PDF</strong>. Vrei să mai adaugi ceva?"
             )
-
             return {"reply": friendly_html, "reply_raw": f"Am confirmat {len(corrected)} produse.", "produse": corrected}
-
         except Exception as e:
             return {"reply": reply_raw, "reply_raw": reply_raw, "produse": []}
 
     return {"reply": reply_raw, "reply_raw": reply_raw, "produse": []}
 
-# ── Sheet Update ───────────────────────────────────────────
-def update_sheet(produse, sursa="PDF", nr_factura=""):
+def update_sheet_data(produse, sursa="PDF", nr_factura=""):
     ws = get_sheet("Inventar")
     all_data = ws.get_all_values()
-
     results = []
-    undo_log = []  # Store old values for undo
+    undo_log = []
 
     for produs in produse:
         cod = str(produs.get("cod", "")).strip()
         aroma = produs.get("aroma", "")
         dim = str(produs.get("dimensiune", "")).strip().upper()
         cant = int(produs.get("cantitate", 0))
-
         found = False
+
         for i, row in enumerate(all_data):
             if i < 4:
                 continue
             r_cod = str(row[0]).strip()
             r_aroma = str(row[2]).strip()
             r_dim = str(row[3]).strip().upper()
-
             if r_cod != cod or r_dim != dim:
                 continue
-
             if aroma:
                 score = similarity(aroma, r_aroma)
                 if score < 0.55:
                     continue
-
             old_stock = int(row[6]) if len(row) > 6 and row[6] and row[6].isdigit() else 0
             new_stock = old_stock + cant
             ws.update_cell(i + 1, 7, new_stock)
-
-            # Save undo info
             undo_log.append({"row_index": i + 1, "old_stock": old_stock, "new_stock": new_stock})
-
-            results.append({
-                "cod": cod,
-                "nume": produs.get("nume"),
-                "aroma": r_aroma,
-                "dimensiune": r_dim,
-                "cantitate_adaugata": cant,
-                "stoc_nou": new_stock,
-                "status": "updated"
-            })
+            results.append({"cod": cod, "nume": produs.get("nume"), "aroma": r_aroma, "dimensiune": r_dim, "cantitate_adaugata": cant, "stoc_nou": new_stock, "status": "updated"})
             found = True
             break
 
         if not found:
-            results.append({
-                "cod": cod,
-                "nume": produs.get("nume"),
-                "aroma": aroma or "—",
-                "dimensiune": dim,
-                "cantitate_adaugata": cant,
-                "status": "not_found",
-                "mesaj": "Produs negăsit — verifică manual"
-            })
+            results.append({"cod": cod, "nume": produs.get("nume"), "aroma": aroma or "—", "dimensiune": dim, "cantitate_adaugata": cant, "status": "not_found"})
 
-    # Log to Istoric
     log_to_istoric(sursa, nr_factura, produse, results)
-
     return results, undo_log
 
 def undo_update(undo_log):
-    """Restore previous stock values."""
     ws = get_sheet("Inventar")
     for entry in undo_log:
         ws.update_cell(entry["row_index"], 7, entry["old_stock"])
@@ -433,35 +368,16 @@ def undo_update(undo_log):
 def index():
     return send_from_directory("../public", "index.html")
 
-@app.route("/api/inventory", methods=["GET"])
-def get_inventory_route():
-    try:
-        inv = load_inventory()
-        summary = {}
-        for cod, data in inv.items():
-            dims = {}
-            for r in data["rows"]:
-                d = r["dim"]
-                if d not in dims:
-                    dims[d] = []
-                if r["aroma"] and r["aroma"] not in dims[d]:
-                    dims[d].append(r["aroma"])
-            summary[cod] = {"nume": data["nume"], "dimensiuni": dims}
-        return jsonify({"success": True, "inventory": summary})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
 @app.route("/api/extract", methods=["POST"])
 def extract():
     try:
+        global _inventory_cache, _product_map_cache
+        _inventory_cache = None
+        _product_map_cache = None
         data = request.json
         pdf_b64 = data.get("pdf_base64")
         if not pdf_b64:
             return jsonify({"error": "Lipsește PDF-ul"}), 400
-        # Reset caches to get fresh data
-        global _inventory_cache, _product_map_cache
-        _inventory_cache = None
-        _product_map_cache = None
         invoice_data = extract_invoice_data(pdf_b64)
         return jsonify({"success": True, "data": invoice_data})
     except Exception as e:
@@ -476,12 +392,7 @@ def chat():
         if not history:
             return jsonify({"error": "Lipsește istoricul"}), 400
         result = process_chat(history, existing_products)
-        return jsonify({
-            "success": True,
-            "reply": result["reply"],
-            "reply_raw": result.get("reply_raw", result["reply"]),
-            "produse": result.get("produse", [])
-        })
+        return jsonify({"success": True, "reply": result["reply"], "reply_raw": result.get("reply_raw", result["reply"]), "produse": result.get("produse", [])})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -494,18 +405,10 @@ def update():
         nr_factura = data.get("nr_factura", "")
         if not produse:
             return jsonify({"error": "Nu există produse"}), 400
-
-        results, undo_log = update_sheet(produse, sursa, nr_factura)
+        results, undo_log = update_sheet_data(produse, sursa, nr_factura)
         updated = [r for r in results if r["status"] == "updated"]
         not_found = [r for r in results if r["status"] == "not_found"]
-
-        return jsonify({
-            "success": True,
-            "actualizate": len(updated),
-            "negasite": len(not_found),
-            "rezultate": results,
-            "undo_log": undo_log
-        })
+        return jsonify({"success": True, "actualizate": len(updated), "negasite": len(not_found), "rezultate": results, "undo_log": undo_log})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -517,7 +420,7 @@ def undo():
         if not undo_log:
             return jsonify({"error": "Nu există date de anulat"}), 400
         undo_update(undo_log)
-        return jsonify({"success": True, "message": f"Am restaurat {len(undo_log)} valori."})
+        return jsonify({"success": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -526,6 +429,26 @@ def istoric():
     try:
         rows = get_istoric()
         return jsonify({"success": True, "rows": rows})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/sterge-istoric", methods=["POST"])
+def sterge_istoric():
+    try:
+        data = request.json
+        index = data.get("index")
+        if index is None:
+            return jsonify({"error": "Lipsește indexul"}), 400
+        ws = get_sheet("Istoric")
+        all_data = ws.get_all_values()
+        data_rows = all_data[1:]  # fără header
+        if index < 0 or index >= len(data_rows):
+            return jsonify({"error": "Index invalid"}), 400
+        # Rows sunt în ordine inversă în frontend
+        real_index = len(data_rows) - index  # 1-based fără header
+        sheet_row = real_index + 1  # +1 pentru header
+        ws.delete_rows(sheet_row)
+        return jsonify({"success": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
