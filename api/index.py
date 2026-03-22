@@ -5,6 +5,7 @@ from google.oauth2.service_account import Credentials
 import json
 import os
 import re
+import unicodedata
 
 app = Flask(__name__, static_folder="../public", static_url_path="")
 
@@ -37,14 +38,149 @@ PRODUCT_MAP = {
 
 PRODUCT_MAP_STR = "\n".join([f"{cod} = {nume}" for cod, nume in PRODUCT_MAP.items()])
 
+# ── Cache for inventory data ───────────────────────────────
+_inventory_cache = None
 
+# ── Text normalization ─────────────────────────────────────
+def normalize(text):
+    """Lowercase, remove diacritics, strip whitespace."""
+    if not text:
+        return ""
+    text = str(text).lower().strip()
+    # Remove diacritics
+    nfkd = unicodedata.normalize("NFKD", text)
+    text = "".join(c for c in nfkd if not unicodedata.combining(c))
+    # Collapse multiple spaces
+    text = re.sub(r"\s+", " ", text)
+    return text
+
+def similarity(a, b):
+    """
+    Simple similarity score between two strings (0.0 to 1.0).
+    Uses character n-gram overlap for fuzzy matching.
+    """
+    a, b = normalize(a), normalize(b)
+    if a == b:
+        return 1.0
+    if not a or not b:
+        return 0.0
+
+    # Check if one contains the other
+    if a in b or b in a:
+        return 0.85
+
+    # Bigram overlap
+    def bigrams(s):
+        return set(s[i:i+2] for i in range(len(s)-1))
+
+    ba, bb = bigrams(a), bigrams(b)
+    if not ba or not bb:
+        return 0.0
+
+    overlap = len(ba & bb)
+    score = (2.0 * overlap) / (len(ba) + len(bb))
+    return score
+
+def fuzzy_match(query, candidates, threshold=0.55):
+    """
+    Find best matching candidate for query.
+    Returns (best_match, score) or (None, 0) if no match above threshold.
+    """
+    query_norm = normalize(query)
+    best_match = None
+    best_score = 0.0
+
+    for candidate in candidates:
+        score = similarity(query_norm, normalize(candidate))
+        if score > best_score:
+            best_score = score
+            best_match = candidate
+
+    if best_score >= threshold:
+        return best_match, best_score
+    return None, 0.0
+
+# ── Google Sheets ──────────────────────────────────────────
 def get_sheet():
     creds = Credentials.from_service_account_info(GOOGLE_CREDENTIALS, scopes=SCOPES)
     client = gspread.authorize(creds)
     sh = client.open_by_key(SHEET_ID)
     return sh.worksheet("Inventar")
 
+def load_inventory():
+    """
+    Load full inventory from Sheets and build a structured lookup.
+    Returns dict: { cod: { nume, dimensiuni: [dim, ...], arome_per_dim: { dim: [aroma, ...] } } }
+    """
+    global _inventory_cache
+    ws = get_sheet()
+    all_data = ws.get_all_values()
 
+    inventory = {}  # cod -> { nume, rows: [(aroma, dim, row_index)] }
+
+    for i, row in enumerate(all_data):
+        if i < 4:
+            continue
+        if len(row) < 4:
+            continue
+        cod = str(row[0]).strip()
+        nume = str(row[1]).strip()
+        aroma = str(row[2]).strip()
+        dim = str(row[3]).strip().upper()
+
+        if not cod or not dim:
+            continue
+
+        if cod not in inventory:
+            inventory[cod] = {"nume": nume, "rows": []}
+        inventory[cod]["rows"].append({"aroma": aroma, "dim": dim, "row_index": i})
+
+    _inventory_cache = inventory
+    return inventory
+
+def get_inventory_cached():
+    global _inventory_cache
+    if _inventory_cache is None:
+        load_inventory()
+    return _inventory_cache
+
+def get_aromas_for_product(cod, dim=None):
+    """Get list of available aromas for a product code, optionally filtered by dimension."""
+    inv = get_inventory_cached()
+    if cod not in inv:
+        return []
+    rows = inv[cod]["rows"]
+    if dim:
+        dim_norm = normalize(dim)
+        rows = [r for r in rows if normalize(r["dim"]) == dim_norm]
+    return list(dict.fromkeys([r["aroma"] for r in rows if r["aroma"]]))
+
+def get_dims_for_product(cod):
+    """Get list of available dimensions for a product code."""
+    inv = get_inventory_cached()
+    if cod not in inv:
+        return []
+    return list(dict.fromkeys([r["dim"] for r in inv[cod]["rows"]]))
+
+def build_inventory_context():
+    """Build a text summary of inventory for AI prompt."""
+    inv = get_inventory_cached()
+    lines = []
+    for cod, data in inv.items():
+        # Group aromas by dimension
+        dim_aromas = {}
+        for r in data["rows"]:
+            d = r["dim"]
+            if d not in dim_aromas:
+                dim_aromas[d] = []
+            if r["aroma"] and r["aroma"] not in dim_aromas[d]:
+                dim_aromas[d].append(r["aroma"])
+        for dim, aromas in dim_aromas.items():
+            aroma_str = ", ".join(aromas) if aromas else "—"
+            lines.append(f"  {cod} | {data['nume']} | {dim} | Arome: {aroma_str}")
+    return "\n".join(lines)
+
+# ── PDF Extraction ─────────────────────────────────────────
 def extract_invoice_data(pdf_base64):
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     response = client.messages.create(
@@ -88,11 +224,10 @@ Produse cunoscute (cod → nume):
 
 Reguli:
 - Extrage codul numeric din denumirea produsului (ex: 2401, 4001, 3101 etc.)
-- Pentru aromă: dacă e menționată EXPLICIT în denumire (ex: LILIAC, SPRING, OCEAN, VANILLA, FLORAL, LAVANDA), pune aroma și setează aroma_auto: true
+- Pentru aromă: dacă e menționată EXPLICIT în denumire (ex: LILIAC, SPRING, OCEAN), pune aroma și setează aroma_auto: true
 - Dacă aroma NU e menționată, pune aroma: null și aroma_auto: false
 - Pentru dimensiune: extrage exact (750ML, 1L, 5L etc.)
-- cantitate = numărul întreg de bucăți
-- Nu inventa arome care nu sunt scrise explicit"""
+- cantitate = numărul întreg de bucăți"""
                 }
             ]
         }]
@@ -102,16 +237,13 @@ Reguli:
     raw = re.sub(r"```json|```", "", raw).strip()
     return json.loads(raw)
 
-
+# ── Chat Processing ────────────────────────────────────────
 def process_chat(history, existing_products):
-    """
-    Conversational endpoint. Understands free Romanian text about products.
-    When user confirms, returns CONFIRMED + JSON.
-    Validates products against known PRODUCT_MAP.
-    """
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
-    # Build context string about existing products
+    # Load real inventory for validation context
+    inventory_context = build_inventory_context()
+
     existing_context = ""
     if existing_products:
         lines = []
@@ -121,36 +253,39 @@ def process_chat(history, existing_products):
 Produse deja în tabel (din factură PDF):
 {chr(10).join(lines)}
 
-Utilizatorul vrea să ADAUGE produse noi la acestea, nu să le înlocuiască.
+Utilizatorul vrea să ADAUGE produse noi la acestea.
 """
     else:
-        existing_context = "Tabelul este gol momentan — utilizatorul introduce produse de la zero."
+        existing_context = "Tabelul este gol — utilizatorul introduce produse de la zero."
 
     system_prompt = f"""Ești un asistent de inventar pentru firma Royal Axix (produse curățenie Konga/Lebon).
 
 {existing_context}
 
-PRODUSE DISPONIBILE (LISTA COMPLETĂ - cod → nume):
-{PRODUCT_MAP_STR}
+INVENTARUL COMPLET DIN GOOGLE SHEETS (cod | produs | dimensiune | arome disponibile):
+{inventory_context}
 
 SARCINA TA:
 1. Utilizatorul îți spune ce produse vrea să adauge (în limbaj liber, română)
-2. Tu înțelegi și reformulezi ce ai înțeles ca să confirmi
-3. Dacă ceva e NECLAR (produs nerecunoscut, cantitate lipsă, dimensiune lipsă) → ÎNTREABĂ, nu presupune
-4. Dacă produsul nu e în lista de mai sus → spune că nu îl recunoști și întreabă cum se numește exact
-5. Când utilizatorul confirmă (zice "da", "corect", "asta e tot", "gata", "ok") → returnezi JSON
+2. Tu înțelegi și reformulezi ce ai înțeles
+3. VALIDARE OBLIGATORIE: Verifică că produsul, dimensiunea și aroma există în inventarul de mai sus
+4. Dacă aroma NU există → spune care arome sunt disponibile pentru acel produs+dimensiune
+5. Fii tolerant la greșeli de scriere, CAPS, lipsă diacritice — încearcă să înțelegi intenția
+6. Dacă ceva e complet neclar → întreabă
+7. Când utilizatorul confirmă → returnezi JSON
 
-REGULI PENTRU JSON:
-- Fiecare combinație produs + aromă + dimensiune = un rând separat
-- Dacă zice "sapun liliac, spring, portocale câte 8 la 1L" → 3 rânduri separate cu cantitate 8 fiecare
-- Dacă zice "18 Softner 1L: ocean 4, liliac 4, floral 5, lavanda 5" → 4 rânduri
-- Potrivește cu codul din lista de mai sus (ex: "sapun lichid" / "classic" → cod 1111)
+EXEMPLE DE TOLERANȚĂ:
+- "floral" = "Floral" = "FLORAL" ✓
+- "fara parfum" = "Fără parfum" ✓  
+- "trandafr" ≈ "Trandafir" ✓ (greșeală de tastare)
+- "jasmim vanila" ≈ "Jasmin Vanilla" ✓
 
 CÂND UTILIZATORUL CONFIRMĂ, răspunde EXACT în acest format (nimic altceva):
 CONFIRMED
 {{"produse": [{{"cod": "...", "nume": "...", "aroma": "...", "dimensiune": "...", "cantitate": 0}}]}}
 
-Altfel răspunde normal, concis, în română. Folosește bullet points când listezi produse."""
+Folosește aroma EXACTĂ din inventar (nu cea scrisă de utilizator).
+Altfel răspunde normal, concis, în română."""
 
     response = client.messages.create(
         model="claude-opus-4-5",
@@ -167,22 +302,44 @@ Altfel răspunde normal, concis, în română. Folosește bullet points când li
             parsed = json.loads(json_part)
             produse = parsed.get("produse", [])
 
-            # Build friendly HTML summary
-            lines = []
+            # Extra server-side fuzzy validation + correction
+            corrected = []
+            warnings = []
             for p in produse:
+                cod = str(p.get("cod", "")).strip()
+                aroma_raw = p.get("aroma", "")
+                dim_raw = str(p.get("dimensiune", "")).strip().upper()
+
+                available_aromas = get_aromas_for_product(cod, dim_raw)
+
+                if available_aromas and aroma_raw:
+                    best, score = fuzzy_match(aroma_raw, available_aromas)
+                    if best:
+                        p["aroma"] = best  # Use exact name from Sheets
+                    else:
+                        warnings.append(f"Aroma '{aroma_raw}' negăsită pentru {p.get('nume')} {dim_raw}")
+
+                corrected.append(p)
+
+            lines = []
+            for p in corrected:
                 lines.append(f"• <strong>{p.get('cantitate')} buc</strong> — {p.get('nume','?')} {p.get('dimensiune','')} <em>{p.get('aroma','')}</em>")
 
+            warn_html = ""
+            if warnings:
+                warn_html = "<br><br>⚠️ <strong>Atenție:</strong> " + "; ".join(warnings)
+
             friendly_html = (
-                f"✅ Am adăugat <strong>{len(produse)} {'rând' if len(produse)==1 else 'rânduri'}</strong> în tabelul de verificare:<br><br>"
+                f"✅ Am adăugat <strong>{len(corrected)} {'rând' if len(corrected)==1 else 'rânduri'}</strong> în tabel:<br><br>"
                 + "<br>".join(lines)
-                + "<br><br>Poți vedea tabelul complet în tab-ul <strong>Factură PDF</strong>. "
-                + "Vrei să mai adaugi ceva?"
+                + warn_html
+                + "<br><br>Poți vedea tabelul în tab-ul <strong>Factură PDF</strong>. Vrei să mai adaugi ceva?"
             )
 
             return {
                 "reply": friendly_html,
-                "reply_raw": f"Am confirmat {len(produse)} produse.",
-                "produse": produse
+                "reply_raw": f"Am confirmat {len(corrected)} produse.",
+                "produse": corrected
             }
 
         except Exception as e:
@@ -190,7 +347,7 @@ Altfel răspunde normal, concis, în română. Folosește bullet points când li
 
     return {"reply": reply_raw, "reply_raw": reply_raw, "produse": []}
 
-
+# ── Sheet Update ───────────────────────────────────────────
 def update_sheet(produse):
     ws = get_sheet()
     all_data = ws.get_all_values()
@@ -198,7 +355,7 @@ def update_sheet(produse):
     results = []
     for produs in produse:
         cod = str(produs.get("cod", "")).strip()
-        aroma = produs.get("aroma")
+        aroma = produs.get("aroma", "")
         dim = str(produs.get("dimensiune", "")).strip().upper()
         cant = int(produs.get("cantitate", 0))
 
@@ -207,28 +364,33 @@ def update_sheet(produse):
             if i < 4:
                 continue
             r_cod = str(row[0]).strip()
-            r_aroma = str(row[2]).strip().lower()
+            r_aroma = str(row[2]).strip()
             r_dim = str(row[3]).strip().upper()
 
-            if r_cod == cod and r_dim == dim:
-                if aroma and aroma.lower() not in r_aroma:
+            if r_cod != cod or r_dim != dim:
+                continue
+
+            # Fuzzy match aroma
+            if aroma:
+                score = similarity(aroma, r_aroma)
+                if score < 0.55:
                     continue
 
-                old_stock = int(row[6]) if row[6] and row[6].isdigit() else 0
-                new_stock = old_stock + cant
-                ws.update_cell(i + 1, 7, new_stock)
+            old_stock = int(row[6]) if len(row) > 6 and row[6] and row[6].isdigit() else 0
+            new_stock = old_stock + cant
+            ws.update_cell(i + 1, 7, new_stock)
 
-                results.append({
-                    "cod": cod,
-                    "nume": produs.get("nume"),
-                    "aroma": row[2],
-                    "dimensiune": row[3],
-                    "cantitate_adaugata": cant,
-                    "stoc_nou": new_stock,
-                    "status": "updated"
-                })
-                found = True
-                break
+            results.append({
+                "cod": cod,
+                "nume": produs.get("nume"),
+                "aroma": r_aroma,
+                "dimensiune": r_dim,
+                "cantitate_adaugata": cant,
+                "stoc_nou": new_stock,
+                "status": "updated"
+            })
+            found = True
+            break
 
         if not found:
             results.append({
@@ -238,16 +400,34 @@ def update_sheet(produse):
                 "dimensiune": dim,
                 "cantitate_adaugata": cant,
                 "status": "not_found",
-                "mesaj": "Produs negăsit — verifică manual aroma"
+                "mesaj": "Produs negăsit — verifică manual"
             })
 
     return results
 
-
+# ── Routes ─────────────────────────────────────────────────
 @app.route("/")
 def index():
     return send_from_directory("../public", "index.html")
 
+@app.route("/api/inventory", methods=["GET"])
+def get_inventory():
+    """Returns inventory summary for frontend use."""
+    try:
+        inv = load_inventory()  # Always fresh on explicit call
+        summary = {}
+        for cod, data in inv.items():
+            dims = {}
+            for r in data["rows"]:
+                d = r["dim"]
+                if d not in dims:
+                    dims[d] = []
+                if r["aroma"] and r["aroma"] not in dims[d]:
+                    dims[d].append(r["aroma"])
+            summary[cod] = {"nume": data["nume"], "dimensiuni": dims}
+        return jsonify({"success": True, "inventory": summary})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/api/extract", methods=["POST"])
 def extract():
@@ -261,17 +441,14 @@ def extract():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 @app.route("/api/chat", methods=["POST"])
 def chat():
     try:
         data = request.json
         history = data.get("history", [])
         existing_products = data.get("existing_products", [])
-
         if not history:
-            return jsonify({"error": "Lipsește istoricul conversației"}), 400
-
+            return jsonify({"error": "Lipsește istoricul"}), 400
         result = process_chat(history, existing_products)
         return jsonify({
             "success": True,
@@ -282,19 +459,16 @@ def chat():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 @app.route("/api/update-sheet", methods=["POST"])
 def update():
     try:
         data = request.json
         produse = data.get("produse", [])
         if not produse:
-            return jsonify({"error": "Nu există produse de actualizat"}), 400
-
+            return jsonify({"error": "Nu există produse"}), 400
         results = update_sheet(produse)
         updated = [r for r in results if r["status"] == "updated"]
         not_found = [r for r in results if r["status"] == "not_found"]
-
         return jsonify({
             "success": True,
             "actualizate": len(updated),
@@ -303,7 +477,6 @@ def update():
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 if __name__ == "__main__":
     app.run(debug=True)
