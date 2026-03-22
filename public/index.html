@@ -49,9 +49,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .btn-green{background:var(--green);color:var(--white)}
 .btn-green:hover{opacity:.9}
 .btn-green:disabled{opacity:.5;cursor:not-allowed}
-.btn-red{background:var(--red);color:var(--white)}
-.btn-red:hover{opacity:.9}
-.btn-red:disabled{opacity:.5;cursor:not-allowed}
 .btn-row{display:flex;gap:12px;margin-top:16px}
 .btn-row .btn{margin-top:0}
 
@@ -102,7 +99,6 @@ tbody tr.new-row td:first-child::after{content:'NOU';font-size:9px;background:va
 .summary-num.red{color:var(--red)}
 .summary-label{font-size:12px;color:var(--muted);margin-top:4px}
 
-/* CHATBOT */
 .chat-window{border:1px solid var(--border);border-radius:12px;height:380px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;background:#f9fbfd;margin-bottom:16px}
 .chat-msg{max-width:82%;padding:10px 14px;border-radius:12px;font-size:14px;line-height:1.6}
 .chat-msg.bot{background:var(--navy);color:var(--white);border-bottom-left-radius:4px;align-self:flex-start}
@@ -124,10 +120,12 @@ tbody tr.new-row td:first-child::after{content:'NOU';font-size:9px;background:va
 .typing-dot:nth-child(3){animation-delay:.3s}
 @keyframes typingBounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
 
-/* ISTORIC */
 .istoric-empty{text-align:center;padding:40px;color:var(--muted);font-size:14px}
-.istoric-refresh{float:right;padding:8px 16px;background:var(--navy);color:var(--white);border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;margin-bottom:16px}
-.istoric-refresh:hover{opacity:.9}
+.istoric-header{display:flex;justify-content:flex-end;margin-bottom:16px}
+.btn-refresh{padding:8px 16px;background:var(--navy);color:var(--white);border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer}
+.btn-refresh:hover{opacity:.9}
+.btn-delete-row{background:none;border:none;cursor:pointer;font-size:16px;color:var(--red);padding:4px 8px;border-radius:6px;transition:background .2s}
+.btn-delete-row:hover{background:var(--red-bg)}
 
 .toast{position:fixed;bottom:24px;right:24px;background:var(--navy);color:var(--white);padding:14px 20px;border-radius:12px;font-size:14px;transform:translateY(100px);opacity:0;transition:all .3s;z-index:999;max-width:320px}
 .toast.show{transform:translateY(0);opacity:1}
@@ -175,9 +173,7 @@ tbody tr.new-row td:first-child::after{content:'NOU';font-size:9px;background:va
         <div class="upload-sub">Format acceptat: PDF</div>
         <div class="file-name" id="fileName"></div>
       </div>
-      <button class="btn btn-primary" id="extractBtn" onclick="extractInvoice()" disabled>
-        ✦ Scanează Factura cu AI
-      </button>
+      <button class="btn btn-primary" id="extractBtn" onclick="extractInvoice()" disabled>✦ Scanează Factura cu AI</button>
     </div>
   </div>
 
@@ -193,8 +189,7 @@ tbody tr.new-row td:first-child::after{content:'NOU';font-size:9px;background:va
         <div class="chat-msg bot" id="chatWelcome">👋 Salut! Spune-mi ce produse vrei să adaugi.<br><br>
         Exemple:<br>
         • <em>"sapun lichid Classic 1L: liliac, spring, portocale, câte 8 bucăți"</em><br>
-        • <em>"3 Softner ocean 5L și 5 Softner lavanda 5L"</em>
-        </div>
+        • <em>"3 Softner ocean 5L și 5 Softner lavanda 5L"</em></div>
         <div class="chat-typing" id="chatTyping">
           <div class="typing-wrap">
             <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
@@ -213,9 +208,10 @@ tbody tr.new-row td:first-child::after{content:'NOU';font-size:9px;background:va
   <div class="tab-content" id="tab-istoric">
     <div class="card">
       <div class="card-title">📋 Istoric Trimiteri</div>
-      <div class="card-sub">Toate trimiterile către Google Sheets.</div>
-      <button class="istoric-refresh" onclick="loadIstoric()">🔄 Reîncarcă</button>
-      <div style="clear:both"></div>
+      <div class="card-sub">Toate trimiterile către Google Sheets. Apasă 🗑️ pentru a șterge o înregistrare.</div>
+      <div class="istoric-header">
+        <button class="btn-refresh" onclick="loadIstoric()">🔄 Reîncarcă</button>
+      </div>
       <div class="table-wrap" id="istoricTableWrap">
         <div class="istoric-empty">Se încarcă istoricul...</div>
       </div>
@@ -244,9 +240,7 @@ tbody tr.new-row td:first-child::after{content:'NOU';font-size:9px;background:va
         </table>
       </div>
       <div class="btn-row">
-        <button class="btn btn-green" id="updateBtn" onclick="updateInventory()" disabled>
-          📊 Adaugă în Inventar Google Sheets
-        </button>
+        <button class="btn btn-green" id="updateBtn" onclick="updateInventory()" disabled>📊 Adaugă în Inventar Google Sheets</button>
       </div>
     </div>
   </div>
@@ -278,9 +272,8 @@ tbody tr.new-row td:first-child::after{content:'NOU';font-size:9px;background:va
 let pdfBase64 = null;
 let extractedData = null;
 let chatHistory = [];
-let lastUndoLog = null; // Store undo data from last update
+let lastUndoLog = null;
 
-// ── Tab switching ──────────────────────────────────────────
 function switchTab(tab) {
   ['pdf','chat','istoric'].forEach(t => {
     document.getElementById('tab-btn-'+t).classList.toggle('active', t===tab);
@@ -301,7 +294,6 @@ function updateChatContextBanner() {
   }
 }
 
-// ── PDF ────────────────────────────────────────────────────
 const zone = document.getElementById("uploadZone");
 zone.addEventListener("dragover", e => { e.preventDefault(); zone.classList.add("drag"); });
 zone.addEventListener("dragleave", () => zone.classList.remove("drag"));
@@ -340,7 +332,6 @@ async function extractInvoice() {
   } finally { hideLoading(); }
 }
 
-// ── Chat ───────────────────────────────────────────────────
 function addChatMsg(html, role) {
   const win = document.getElementById("chatWindow");
   const typing = document.getElementById("chatTyping");
@@ -370,9 +361,7 @@ async function sendChat() {
     if (!data.success) throw new Error(data.error);
     addChatMsg(data.reply, "bot");
     chatHistory.push({role:"assistant", content:data.reply_raw||data.reply});
-    if (data.produse && data.produse.length > 0) {
-      mergeProductsIntoTable(data.produse);
-    }
+    if (data.produse && data.produse.length > 0) mergeProductsIntoTable(data.produse);
   } catch(e) {
     hideTyping();
     addChatMsg("❌ Eroare: " + e.message, "bot");
@@ -384,9 +373,7 @@ async function sendChat() {
 
 function mergeProductsIntoTable(newProducts) {
   newProducts.forEach(p => p._isNew = true);
-  if (!extractedData) {
-    extractedData = { numar_factura: "Manual", data: new Date().toLocaleDateString("ro-RO"), produse: [] };
-  }
+  if (!extractedData) extractedData = { numar_factura: "Manual", data: new Date().toLocaleDateString("ro-RO"), produse: [] };
   extractedData.produse = [...extractedData.produse, ...newProducts];
   renderResults(extractedData);
   updateChatBadge();
@@ -402,7 +389,6 @@ function updateChatBadge() {
   badge.classList.toggle("show", newCount > 0);
 }
 
-// ── Render Results ─────────────────────────────────────────
 function renderResults(data) {
   const total = data.produse?.reduce((s,p)=>s+(p.cantitate||0),0)||0;
   const newCount = data.produse?.filter(p=>p._isNew).length||0;
@@ -426,9 +412,7 @@ function renderResults(data) {
   data.produse?.forEach((p,i) => {
     const hasAroma = p.aroma && p.aroma!=='null' && p.aroma!=='';
     tbody.innerHTML+=`<tr class="${p._isNew?'new-row':''}">
-      <td>${i+1}</td>
-      <td><code>${p.cod||"—"}</code></td>
-      <td>${p.nume||"—"}</td>
+      <td>${i+1}</td><td><code>${p.cod||"—"}</code></td><td>${p.nume||"—"}</td>
       <td>
         <input type="text" class="aroma-input ${hasAroma?'filled':'missing'}"
           value="${hasAroma?p.aroma:''}" placeholder="Scrie aroma..."
@@ -450,7 +434,6 @@ function updateAroma(index, value) {
   if (extractedData?.produse?.[index]) extractedData.produse[index].aroma = value;
 }
 
-// ── Update Sheets ──────────────────────────────────────────
 async function updateInventory() {
   if (!extractedData) return;
   const missing = extractedData.produse.filter(p=>!p.aroma||p.aroma.trim()==="");
@@ -464,15 +447,11 @@ async function updateInventory() {
     const sursa = extractedData.numar_factura === "Manual" ? "Chat manual" : "PDF";
     const res = await fetch("/api/update-sheet", {
       method:"POST", headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
-        produse: extractedData.produse,
-        sursa: sursa,
-        nr_factura: extractedData.numar_factura || ""
-      })
+      body:JSON.stringify({produse:extractedData.produse, sursa:sursa, nr_factura:extractedData.numar_factura||""})
     });
     const data = await res.json();
     if (!data.success) throw new Error(data.error);
-    lastUndoLog = data.undo_log; // Save for undo
+    lastUndoLog = data.undo_log;
     renderUpdateResults(data);
     showToast(`✅ ${data.actualizate} produse actualizate!`, "success");
   } catch(e) {
@@ -482,18 +461,12 @@ async function updateInventory() {
 }
 
 async function undoUpdate() {
-  if (!lastUndoLog || lastUndoLog.length === 0) {
-    showToast("❌ Nu există date de anulat.", "error");
-    return;
-  }
+  if (!lastUndoLog || lastUndoLog.length === 0) { showToast("❌ Nu există date de anulat.", "error"); return; }
   const ok = confirm(`⚠️ Ești sigur că vrei să anulezi ultima trimitere?\n\nSe vor restaura ${lastUndoLog.length} valori de stoc la valorile anterioare.`);
   if (!ok) return;
   showLoading("Se anulează trimiterea...");
   try {
-    const res = await fetch("/api/undo", {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({undo_log: lastUndoLog})
-    });
+    const res = await fetch("/api/undo", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({undo_log:lastUndoLog}) });
     const data = await res.json();
     if (!data.success) throw new Error(data.error);
     lastUndoLog = null;
@@ -522,7 +495,6 @@ function renderUpdateResults(data) {
   document.getElementById("updateResults").scrollIntoView({behavior:"smooth"});
 }
 
-// ── Istoric ────────────────────────────────────────────────
 async function loadIstoric() {
   const wrap = document.getElementById("istoricTableWrap");
   wrap.innerHTML = '<div class="istoric-empty">Se încarcă...</div>';
@@ -534,8 +506,8 @@ async function loadIstoric() {
       wrap.innerHTML = '<div class="istoric-empty">📭 Nu există înregistrări încă.<br>Prima trimitere în Sheets va apărea aici.</div>';
       return;
     }
-    let html = `<table><thead><tr><th>Data</th><th>Ora</th><th>Sursă</th><th>Nr. Factură</th><th>Produse</th><th>Total Buc.</th><th>Status</th></tr></thead><tbody>`;
-    data.rows.forEach(r => {
+    let html = `<table><thead><tr><th>Data</th><th>Ora</th><th>Sursă</th><th>Nr. Factură</th><th>Produse</th><th>Total Buc.</th><th>Status</th><th></th></tr></thead><tbody>`;
+    data.rows.forEach((r, i) => {
       html += `<tr>
         <td>${r['Data']||"—"}</td>
         <td>${r['Ora']||"—"}</td>
@@ -544,13 +516,34 @@ async function loadIstoric() {
         <td>${r['Produse procesate']||"—"}</td>
         <td>${r['Total bucati']||"—"}</td>
         <td>${r['Status']||"—"}</td>
+        <td><button class="btn-delete-row" onclick="stergeRandIstoric(${i})" title="Șterge această înregistrare">🗑️</button></td>
       </tr>`;
     });
     html += '</tbody></table>';
     wrap.innerHTML = html;
+    window._istoricRows = data.rows;
   } catch(e) {
     wrap.innerHTML = `<div class="istoric-empty">❌ Eroare: ${e.message}</div>`;
   }
+}
+
+async function stergeRandIstoric(index) {
+  const row = window._istoricRows[index];
+  const ok = confirm(`⚠️ Sigur vrei să ștergi această înregistrare?\n\n📅 ${row['Data']} ${row['Ora']} — ${row['Sursa']} | Factura: ${row['Nr. Factura']}\n\nAceastă acțiune nu poate fi anulată.`);
+  if (!ok) return;
+  showLoading("Se șterge înregistrarea...");
+  try {
+    const res = await fetch("/api/sterge-istoric", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({index:index})
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    showToast("✅ Înregistrarea a fost ștearsă!", "success");
+    loadIstoric();
+  } catch(e) {
+    showToast("❌ Eroare: " + e.message, "error");
+  } finally { hideLoading(); }
 }
 
 function showLoading(t){document.getElementById("loadingText").textContent=t;document.getElementById("loading").classList.add("show");}
