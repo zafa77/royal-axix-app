@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Royal Axix — Procesare Facturi</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--navy:#1B3A6B;--gold:#C9943A;--gold-l:#e8b85a;--white:#fff;--bg:#f4f6fb;--card:#fff;--border:#e0e6f0;--text:#1a2535;--muted:#7a8a9a;--green:#1E8449;--green-bg:#E9F7EF;--red:#C0392B;--red-bg:#FDECEA;--orange:#8B4513;--orange-bg:#FFF3CD}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* HEADER */
+.header{background:var(--navy);padding:16px 24px;display:flex;align-items:center;gap:14px;box-shadow:0 2px 12px rgba(27,58,107,.3)}
+.header-logo{display:flex;align-items:center;gap:10px}
+.crown{width:28px;height:22px}
+.brand{font-family:'Playfair Display',serif;font-size:22px;color:var(--white)}
+.brand span{color:var(--gold)}
+.header-sub{margin-left:auto;font-size:12px;color:rgba(255,255,255,.5);letter-spacing:1px;text-transform:uppercase}
+
+/* MAIN */
+.main{max-width:860px;margin:0 auto;padding:32px 20px}
+
+/* UPLOAD CARD */
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:24px}
+.card-title{font-family:'Playfair Display',serif;font-size:18px;color:var(--navy);margin-bottom:6px}
+.card-sub{font-size:13px;color:var(--muted);margin-bottom:20px}
+
+.upload-zone{border:2px dashed var(--border);border-radius:12px;padding:40px;text-align:center;cursor:pointer;transition:all .2s;position:relative}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--gold);background:#fffbf5}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-icon{font-size:40px;margin-bottom:12px}
+.upload-text{font-size:15px;color:var(--text);margin-bottom:4px}
+.upload-sub{font-size:13px;color:var(--muted)}
+.upload-zone.has-file{border-color:var(--navy);background:#f0f4fa}
+.file-name{font-size:14px;color:var(--navy);font-weight:500;margin-top:8px}
+
+.btn{width:100%;padding:14px;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:all .2s;margin-top:16px}
+.btn-primary{background:var(--gold);color:var(--navy)}
+.btn-primary:hover{background:var(--gold-l)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-green{background:var(--green);color:var(--white)}
+.btn-green:hover{opacity:.9}
+.btn-green:disabled{opacity:.5;cursor:not-allowed}
+
+/* LOADING */
+.loading{display:none;text-align:center;padding:24px}
+.loading.show{display:block}
+.spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{color:var(--muted);font-size:14px}
+
+/* RESULTS */
+.results{display:none}
+.results.show{display:block}
+
+.invoice-info{background:linear-gradient(135deg,var(--navy),#2a4f8a);border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;gap:24px;flex-wrap:wrap}
+.invoice-info-item label{font-size:11px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:2px}
+.invoice-info-item span{font-size:15px;color:var(--white);font-weight:500}
+
+/* TABLE */
+.table-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead tr{background:var(--navy)}
+thead th{color:var(--white);padding:12px 14px;text-align:left;font-weight:500;font-size:12px;letter-spacing:.3px}
+tbody tr:nth-child(even){background:#f8fafc}
+tbody tr:hover{background:#eef2f8}
+tbody td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500}
+.badge-ok{background:var(--green-bg);color:var(--green)}
+.badge-warn{background:var(--orange-bg);color:var(--orange)}
+.badge-err{background:var(--red-bg);color:var(--red)}
+.aroma-missing{color:var(--muted);font-style:italic}
+
+/* ALERT */
+.alert{padding:12px 16px;border-radius:10px;font-size:13px;margin-bottom:16px;display:flex;gap:10px;align-items:flex-start}
+.alert-warn{background:var(--orange-bg);color:var(--orange);border:1px solid #f0d080}
+.alert-info{background:#e8f4fd;color:#1565C0;border:1px solid #b3d4f0}
+
+/* RESULT SUMMARY */
+.summary{display:flex;gap:16px;margin-top:20px;flex-wrap:wrap}
+.summary-card{flex:1;min-width:140px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center}
+.summary-num{font-size:28px;font-weight:500;color:var(--navy)}
+.summary-num.green{color:var(--green)}
+.summary-num.red{color:var(--red)}
+.summary-label{font-size:12px;color:var(--muted);margin-top:4px}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--navy);color:var(--white);padding:14px 20px;border-radius:12px;font-size:14px;transform:translateY(100px);opacity:0;transition:all .3s;z-index:999;max-width:320px}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{background:var(--green)}
+.toast.error{background:var(--red)}
+
+@media(max-width:600px){.invoice-info{flex-direction:column;gap:12px}.summary{flex-direction:column}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">
+    <svg class="crown" viewBox="0 0 28 22" fill="none">
+      <path d="M1 19L3.5 7L9 13L14 2L19 13L24.5 7L27 19H1Z" fill="#C9943A"/>
+      <circle cx="1.5" cy="7" r="2" fill="#C9943A"/>
+      <circle cx="14" cy="1.5" r="2.5" fill="#C9943A"/>
+      <circle cx="26.5" cy="7" r="2" fill="#C9943A"/>
+      <rect x="1" y="19" width="26" height="3" rx="1.5" fill="#C9943A"/>
+    </svg>
+    <div class="brand">Royal <span>Axix</span></div>
+  </div>
+  <div class="header-sub">Procesare Facturi → Inventar</div>
+</div>
+
+<div class="main">
+
+  <!-- UPLOAD -->
+  <div class="card">
+    <div class="card-title">📄 Încarcă Factura PDF</div>
+    <div class="card-sub">Sistemul va extrage automat produsele, aromele și cantitățile</div>
+
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" accept=".pdf" id="fileInput" onchange="handleFile(this)">
+      <div class="upload-icon">📋</div>
+      <div class="upload-text">Trage factura PDF aici sau click pentru a o selecta</div>
+      <div class="upload-sub">Format acceptat: PDF</div>
+      <div class="file-name" id="fileName"></div>
+    </div>
+
+    <button class="btn btn-primary" id="extractBtn" onclick="extractInvoice()" disabled>
+      ✦ Scanează Factura cu AI
+    </button>
+  </div>
+
+  <!-- LOADING -->
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loadingText">Claude scanează factura...</div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="results" id="results">
+    <div class="card">
+      <div class="card-title">✅ Date Extrase din Factură</div>
+      <div class="card-sub">Verifică datele înainte de a le adăuga în inventar</div>
+
+      <div class="invoice-info" id="invoiceInfo"></div>
+
+      <div id="alerts"></div>
+
+      <div class="table-wrap">
+        <table id="productsTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Cod</th>
+              <th>Produs</th>
+              <th>Aromă</th>
+              <th>Dimensiune</th>
+              <th>Cantitate</th>
+            </tr>
+          </thead>
+          <tbody id="productsBody"></tbody>
+        </table>
+      </div>
+
+      <button class="btn btn-green" id="updateBtn" onclick="updateInventory()" style="margin-top:20px">
+        📊 Adaugă în Inventar Google Sheets
+      </button>
+    </div>
+  </div>
+
+  <!-- UPDATE RESULTS -->
+  <div class="results" id="updateResults">
+    <div class="card">
+      <div class="card-title">📊 Inventar Actualizat!</div>
+      <div class="card-sub">Verifică Google Sheets-ul pentru a vedea modificările</div>
+      <div class="summary" id="summary"></div>
+      <div class="table-wrap" style="margin-top:20px">
+        <table>
+          <thead>
+            <tr>
+              <th>Cod</th>
+              <th>Produs</th>
+              <th>Aromă</th>
+              <th>Dim.</th>
+              <th>Adăugat</th>
+              <th>Stoc Nou</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="updateBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let pdfBase64 = null;
+let extractedData = null;
+
+// Drag & drop
+const zone = document.getElementById("uploadZone");
+zone.addEventListener("dragover", e => { e.preventDefault(); zone.classList.add("drag"); });
+zone.addEventListener("dragleave", () => zone.classList.remove("drag"));
+zone.addEventListener("drop", e => {
+  e.preventDefault();
+  zone.classList.remove("drag");
+  const file = e.dataTransfer.files[0];
+  if (file && file.type === "application/pdf") processFile(file);
+});
+
+function handleFile(input) {
+  if (input.files[0]) processFile(input.files[0]);
+}
+
+function processFile(file) {
+  document.getElementById("fileName").textContent = "📎 " + file.name;
+  zone.classList.add("has-file");
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    pdfBase64 = e.target.result.split(",")[1];
+    document.getElementById("extractBtn").disabled = false;
+  };
+  reader.readAsDataURL(file);
+}
+
+function showLoading(text) {
+  document.getElementById("loadingText").textContent = text;
+  document.getElementById("loading").classList.add("show");
+}
+function hideLoading() {
+  document.getElementById("loading").classList.remove("show");
+}
+
+function showToast(msg, type = "") {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = "toast show " + type;
+  setTimeout(() => t.className = "toast", 3500);
+}
+
+async function extractInvoice() {
+  if (!pdfBase64) return;
+  document.getElementById("extractBtn").disabled = true;
+  document.getElementById("results").classList.remove("show");
+  document.getElementById("updateResults").classList.remove("show");
+  showLoading("Claude scanează factura PDF...");
+
+  try {
+    const res = await fetch("/api/extract", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pdf_base64: pdfBase64 })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+
+    extractedData = data.data;
+    renderResults(extractedData);
+    showToast("✅ Factură scanată cu succes!", "success");
+  } catch (e) {
+    showToast("❌ Eroare: " + e.message, "error");
+    document.getElementById("extractBtn").disabled = false;
+  } finally {
+    hideLoading();
+  }
+}
+
+function renderResults(data) {
+  // Invoice info
+  document.getElementById("invoiceInfo").innerHTML = `
+    <div class="invoice-info-item"><label>Număr Factură</label><span>${data.numar_factura || "—"}</span></div>
+    <div class="invoice-info-item"><label>Data</label><span>${data.data || "—"}</span></div>
+    <div class="invoice-info-item"><label>Total Produse</label><span>${data.produse?.length || 0} linii</span></div>
+    <div class="invoice-info-item"><label>Total Unități</label><span>${data.produse?.reduce((s,p) => s + (p.cantitate||0), 0) || 0} buc</span></div>
+  `;
+
+  // Alerts
+  const missing = data.produse?.filter(p => !p.aroma) || [];
+  let alertsHtml = "";
+  if (missing.length > 0) {
+    alertsHtml += `<div class="alert alert-warn">⚠️ <div><strong>${missing.length} produse</strong> fără aromă specificată în factură. Sistemul va potrivi primul rând disponibil — verifică manual după actualizare.</div></div>`;
+  }
+  alertsHtml += `<div class="alert alert-info">ℹ️ Verifică datele de mai jos înainte de a actualiza inventarul. Poți modifica cantitățile direct în tabel.</div>`;
+  document.getElementById("alerts").innerHTML = alertsHtml;
+
+  // Table
+  const tbody = document.getElementById("productsBody");
+  tbody.innerHTML = "";
+  data.produse?.forEach((p, i) => {
+    const aromaHtml = p.aroma
+      ? `<strong>${p.aroma}</strong>`
+      : `<span class="aroma-missing">Nespecificată</span>`;
+    tbody.innerHTML += `
+      <tr>
+        <td>${i+1}</td>
+        <td><code>${p.cod || "—"}</code></td>
+        <td>${p.nume || "—"}</td>
+        <td>${aromaHtml}</td>
+        <td>${p.dimensiune || "—"}</td>
+        <td><input type="number" value="${p.cantitate||0}" min="0" style="width:70px;padding:4px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px" onchange="extractedData.produse[${i}].cantitate=+this.value"></td>
+      </tr>`;
+  });
+
+  document.getElementById("results").classList.add("show");
+}
+
+async function updateInventory() {
+  if (!extractedData) return;
+  document.getElementById("updateBtn").disabled = true;
+  showLoading("Actualizez Google Sheets...");
+
+  try {
+    const res = await fetch("/api/update-sheet", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ produse: extractedData.produse })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+
+    renderUpdateResults(data);
+    showToast(`✅ ${data.actualizate} produse adăugate în inventar!`, "success");
+  } catch (e) {
+    showToast("❌ Eroare: " + e.message, "error");
+    document.getElementById("updateBtn").disabled = false;
+  } finally {
+    hideLoading();
+  }
+}
+
+function renderUpdateResults(data) {
+  document.getElementById("summary").innerHTML = `
+    <div class="summary-card"><div class="summary-num green">${data.actualizate}</div><div class="summary-label">Produse actualizate</div></div>
+    <div class="summary-card"><div class="summary-num red">${data.negasite}</div><div class="summary-label">Negăsite (manual)</div></div>
+    <div class="summary-card"><div class="summary-num">${data.rezultate?.length || 0}</div><div class="summary-label">Total linii</div></div>
+  `;
+
+  const tbody = document.getElementById("updateBody");
+  tbody.innerHTML = "";
+  data.rezultate?.forEach(r => {
+    const badge = r.status === "updated"
+      ? `<span class="badge badge-ok">✓ Actualizat</span>`
+      : `<span class="badge badge-warn">⚠️ Verifică manual</span>`;
+    tbody.innerHTML += `
+      <tr>
+        <td><code>${r.cod}</code></td>
+        <td>${r.nume || "—"}</td>
+        <td>${r.aroma || "—"}</td>
+        <td>${r.dimensiune || "—"}</td>
+        <td>+${r.cantitate_adaugata}</td>
+        <td>${r.stoc_nou !== undefined ? r.stoc_nou : "—"}</td>
+        <td>${badge}</td>
+      </tr>`;
+  });
+
+  document.getElementById("updateResults").classList.add("show");
+  document.getElementById("updateResults").scrollIntoView({ behavior: "smooth" });
+}
+</script>
+</body>
+</html>
