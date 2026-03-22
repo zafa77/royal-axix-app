@@ -7,10 +7,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--navy:#1B3A6B;--gold:#C9943A;--gold-l:#e8b85a;--white:#fff;--bg:#f4f6fb;--card:#fff;--border:#e0e6f0;--text:#1a2535;--muted:#7a8a9a;--green:#1E8449;--green-bg:#E9F7EF;--red:#C0392B;--red-bg:#FDECEA;--orange:#8B4513;--orange-bg:#FFF3CD}
+:root{--navy:#1B3A6B;--gold:#C9943A;--gold-l:#e8b85a;--white:#fff;--bg:#f4f6fb;--card:#fff;--border:#e0e6f0;--text:#1a2535;--muted:#7a8a9a;--green:#1E8449;--green-bg:#E9F7EF;--red:#C0392B;--red-bg:#FDECEA;--orange:#8B4513;--orange-bg:#FFF3CD;--purple:#6B21A8;--purple-bg:#F3E8FF}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 
-/* HEADER */
 .header{background:var(--navy);padding:16px 24px;display:flex;align-items:center;gap:14px;box-shadow:0 2px 12px rgba(27,58,107,.3)}
 .header-logo{display:flex;align-items:center;gap:10px}
 .crown{width:28px;height:22px}
@@ -18,10 +17,18 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .brand span{color:var(--gold)}
 .header-sub{margin-left:auto;font-size:12px;color:rgba(255,255,255,.5);letter-spacing:1px;text-transform:uppercase}
 
-/* MAIN */
-.main{max-width:860px;margin:0 auto;padding:32px 20px}
+.main{max-width:900px;margin:0 auto;padding:32px 20px}
 
-/* UPLOAD CARD */
+.tabs{display:flex;gap:8px;margin-bottom:24px}
+.tab{flex:1;padding:12px;border:2px solid var(--border);border-radius:12px;background:var(--card);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;color:var(--muted);text-align:center;position:relative}
+.tab.active{border-color:var(--navy);background:var(--navy);color:var(--white)}
+.tab:hover:not(.active){border-color:var(--navy);color:var(--navy)}
+.tab .badge-count{position:absolute;top:-8px;right:-8px;background:var(--gold);color:var(--navy);border-radius:20px;font-size:11px;font-weight:700;padding:2px 7px;display:none}
+.tab .badge-count.show{display:block}
+
+.tab-content{display:none}
+.tab-content.active{display:block}
+
 .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:24px}
 .card-title{font-family:'Playfair Display',serif;font-size:18px;color:var(--navy);margin-bottom:6px}
 .card-sub{font-size:13px;color:var(--muted);margin-bottom:20px}
@@ -43,14 +50,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .btn-green:hover{opacity:.9}
 .btn-green:disabled{opacity:.5;cursor:not-allowed}
 
-/* LOADING */
 .loading{display:none;text-align:center;padding:24px}
 .loading.show{display:block}
 .spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading-text{color:var(--muted);font-size:14px}
 
-/* RESULTS */
 .results{display:none}
 .results.show{display:block}
 
@@ -58,7 +63,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .invoice-info-item label{font-size:11px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:2px}
 .invoice-info-item span{font-size:15px;color:var(--white);font-weight:500}
 
-/* TABLE */
 .table-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border)}
 table{width:100%;border-collapse:collapse;font-size:13px}
 thead tr{background:var(--navy)}
@@ -66,18 +70,25 @@ thead th{color:var(--white);padding:12px 14px;text-align:left;font-weight:500;fo
 tbody tr:nth-child(even){background:#f8fafc}
 tbody tr:hover{background:#eef2f8}
 tbody td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr.new-row{background:#fffbf0}
+tbody tr.new-row td:first-child::after{content:'NOU';font-size:9px;background:var(--gold);color:var(--navy);padding:1px 5px;border-radius:4px;margin-left:4px;font-weight:700}
+
+.aroma-input{width:100%;padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);transition:border-color .2s;background:#fff}
+.aroma-input:focus{outline:none;border-color:var(--gold);background:#fffbf5}
+.aroma-input.filled{border-color:var(--green);background:var(--green-bg);color:var(--green)}
+.aroma-input.missing{border-color:var(--orange);background:var(--orange-bg)}
+.aroma-input::placeholder{color:var(--muted);font-style:italic}
+
 .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500}
 .badge-ok{background:var(--green-bg);color:var(--green)}
 .badge-warn{background:var(--orange-bg);color:var(--orange)}
-.badge-err{background:var(--red-bg);color:var(--red)}
-.aroma-missing{color:var(--muted);font-style:italic}
 
-/* ALERT */
 .alert{padding:12px 16px;border-radius:10px;font-size:13px;margin-bottom:16px;display:flex;gap:10px;align-items:flex-start}
 .alert-warn{background:var(--orange-bg);color:var(--orange);border:1px solid #f0d080}
 .alert-info{background:#e8f4fd;color:#1565C0;border:1px solid #b3d4f0}
+.alert-purple{background:var(--purple-bg);color:var(--purple);border:1px solid #d8b4fe}
+.alert-green{background:var(--green-bg);color:var(--green);border:1px solid #a7d7b5}
 
-/* RESULT SUMMARY */
 .summary{display:flex;gap:16px;margin-top:20px;flex-wrap:wrap}
 .summary-card{flex:1;min-width:140px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center}
 .summary-num{font-size:28px;font-weight:500;color:var(--navy)}
@@ -85,13 +96,38 @@ tbody td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:
 .summary-num.red{color:var(--red)}
 .summary-label{font-size:12px;color:var(--muted);margin-top:4px}
 
-/* TOAST */
+/* CHATBOT */
+.chat-window{border:1px solid var(--border);border-radius:12px;height:380px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;background:#f9fbfd;margin-bottom:16px}
+.chat-msg{max-width:82%;padding:10px 14px;border-radius:12px;font-size:14px;line-height:1.6}
+.chat-msg.bot{background:var(--navy);color:var(--white);border-bottom-left-radius:4px;align-self:flex-start}
+.chat-msg.user{background:var(--gold);color:var(--navy);border-bottom-right-radius:4px;align-self:flex-end;font-weight:500}
+.chat-msg.bot em{color:var(--gold-l);font-style:normal}
+
+.chat-input-row{display:flex;gap:8px}
+.chat-input{flex:1;padding:12px 16px;border:1.5px solid var(--border);border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;transition:border-color .2s}
+.chat-input:focus{outline:none;border-color:var(--gold)}
+.chat-send{padding:12px 20px;background:var(--navy);color:var(--white);border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:background .2s;white-space:nowrap}
+.chat-send:hover{background:#2a4f8a}
+.chat-send:disabled{opacity:.5;cursor:not-allowed}
+
+.chat-context-banner{background:linear-gradient(135deg,var(--navy),#2a4f8a);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:rgba(255,255,255,.85);display:none}
+.chat-context-banner.show{display:block}
+.chat-context-banner strong{color:var(--gold-l)}
+
+.chat-typing{display:none;align-self:flex-start}
+.chat-typing.show{display:flex}
+.typing-wrap{background:var(--navy);padding:12px 16px;border-radius:12px;border-bottom-left-radius:4px;display:flex;gap:5px;align-items:center}
+.typing-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.5);animation:typingBounce .8s infinite}
+.typing-dot:nth-child(2){animation-delay:.15s}
+.typing-dot:nth-child(3){animation-delay:.3s}
+@keyframes typingBounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
+
 .toast{position:fixed;bottom:24px;right:24px;background:var(--navy);color:var(--white);padding:14px 20px;border-radius:12px;font-size:14px;transform:translateY(100px);opacity:0;transition:all .3s;z-index:999;max-width:320px}
 .toast.show{transform:translateY(0);opacity:1}
 .toast.success{background:var(--green)}
 .toast.error{background:var(--red)}
 
-@media(max-width:600px){.invoice-info{flex-direction:column;gap:12px}.summary{flex-direction:column}}
+@media(max-width:600px){.invoice-info{flex-direction:column;gap:12px}.summary{flex-direction:column}.tabs{flex-direction:column}}
 </style>
 </head>
 <body>
@@ -112,57 +148,87 @@ tbody td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:
 
 <div class="main">
 
-  <!-- UPLOAD -->
-  <div class="card">
-    <div class="card-title">📄 Încarcă Factura PDF</div>
-    <div class="card-sub">Sistemul va extrage automat produsele, aromele și cantitățile</div>
-
-    <div class="upload-zone" id="uploadZone">
-      <input type="file" accept=".pdf" id="fileInput" onchange="handleFile(this)">
-      <div class="upload-icon">📋</div>
-      <div class="upload-text">Trage factura PDF aici sau click pentru a o selecta</div>
-      <div class="upload-sub">Format acceptat: PDF</div>
-      <div class="file-name" id="fileName"></div>
-    </div>
-
-    <button class="btn btn-primary" id="extractBtn" onclick="extractInvoice()" disabled>
-      ✦ Scanează Factura cu AI
+  <div class="tabs">
+    <button class="tab active" id="tab-btn-pdf" onclick="switchTab('pdf')">📄 Factură PDF</button>
+    <button class="tab" id="tab-btn-chat" onclick="switchTab('chat')">💬 Adaugă Manual
+      <span class="badge-count" id="chatBadge">0</span>
     </button>
+  </div>
+
+  <!-- TAB: PDF -->
+  <div class="tab-content active" id="tab-pdf">
+    <div class="card">
+      <div class="card-title">📄 Încarcă Factura PDF</div>
+      <div class="card-sub">Sistemul extrage produsele și cantitățile automat. Aromele lipsă le completezi tu manual.</div>
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" accept=".pdf" id="fileInput" onchange="handleFile(this)">
+        <div class="upload-icon">📋</div>
+        <div class="upload-text">Trage factura PDF aici sau click pentru a o selecta</div>
+        <div class="upload-sub">Format acceptat: PDF</div>
+        <div class="file-name" id="fileName"></div>
+      </div>
+      <button class="btn btn-primary" id="extractBtn" onclick="extractInvoice()" disabled>
+        ✦ Scanează Factura cu AI
+      </button>
+    </div>
+  </div>
+
+  <!-- TAB: CHAT -->
+  <div class="tab-content" id="tab-chat">
+    <div class="card">
+      <div class="card-title">💬 Adaugă Produse Manual</div>
+      <div class="card-sub">Spune-mi ce produse vrei să adaugi și le adaug în tabelul de verificare.</div>
+
+      <!-- Context banner — shows when PDF products exist -->
+      <div class="chat-context-banner" id="chatContextBanner">
+        📋 Am <strong id="chatContextCount">0</strong> produse din factură în tabel.
+        Ce vrei să adaugi în plus?
+      </div>
+
+      <div class="chat-window" id="chatWindow">
+        <div class="chat-msg bot" id="chatWelcome">👋 Salut! Spune-mi ce produse vrei să adaugi.<br><br>
+        Exemple:<br>
+        • <em>"sapun lichid Classic 1L: liliac, spring, portocale, câte 8 bucăți"</em><br>
+        • <em>"3 Softner ocean 5L și 5 Softner lavanda 5L"</em><br>
+        • <em>"18 Hipoclorit 1L fără parfum"</em>
+        </div>
+        <div class="chat-typing" id="chatTyping">
+          <div class="typing-wrap">
+            <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
+          </div>
+        </div>
+      </div>
+      <div class="chat-input-row">
+        <input type="text" class="chat-input" id="chatInput"
+          placeholder="Ce produse vrei să adaugi?"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}">
+        <button class="chat-send" id="chatSendBtn" onclick="sendChat()">Trimite ↵</button>
+      </div>
+    </div>
   </div>
 
   <!-- LOADING -->
   <div class="loading" id="loading">
     <div class="spinner"></div>
-    <div class="loading-text" id="loadingText">Claude scanează factura...</div>
+    <div class="loading-text" id="loadingText">Se procesează...</div>
   </div>
 
   <!-- RESULTS -->
   <div class="results" id="results">
     <div class="card">
-      <div class="card-title">✅ Date Extrase din Factură</div>
-      <div class="card-sub">Verifică datele înainte de a le adăuga în inventar</div>
-
+      <div class="card-title">✅ Verifică Datele</div>
+      <div class="card-sub">Completează aromele lipsă, verifică cantitățile și apasă <strong>Adaugă în Inventar</strong>.</div>
       <div class="invoice-info" id="invoiceInfo"></div>
-
       <div id="alerts"></div>
-
       <div class="table-wrap">
-        <table id="productsTable">
+        <table>
           <thead>
-            <tr>
-              <th>#</th>
-              <th>Cod</th>
-              <th>Produs</th>
-              <th>Aromă</th>
-              <th>Dimensiune</th>
-              <th>Cantitate</th>
-            </tr>
+            <tr><th>#</th><th>Cod</th><th>Produs</th><th>Aromă / Variantă ✏️</th><th>Dimensiune</th><th>Cantitate</th></tr>
           </thead>
           <tbody id="productsBody"></tbody>
         </table>
       </div>
-
-      <button class="btn btn-green" id="updateBtn" onclick="updateInventory()" style="margin-top:20px">
+      <button class="btn btn-green" id="updateBtn" onclick="updateInventory()" style="margin-top:20px" disabled>
         📊 Adaugă în Inventar Google Sheets
       </button>
     </div>
@@ -172,20 +238,12 @@ tbody td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:
   <div class="results" id="updateResults">
     <div class="card">
       <div class="card-title">📊 Inventar Actualizat!</div>
-      <div class="card-sub">Verifică Google Sheets-ul pentru a vedea modificările</div>
+      <div class="card-sub">Verifică Google Sheets-ul pentru modificări</div>
       <div class="summary" id="summary"></div>
       <div class="table-wrap" style="margin-top:20px">
         <table>
           <thead>
-            <tr>
-              <th>Cod</th>
-              <th>Produs</th>
-              <th>Aromă</th>
-              <th>Dim.</th>
-              <th>Adăugat</th>
-              <th>Stoc Nou</th>
-              <th>Status</th>
-            </tr>
+            <tr><th>Cod</th><th>Produs</th><th>Aromă</th><th>Dim.</th><th>Adăugat</th><th>Stoc Nou</th><th>Status</th></tr>
           </thead>
           <tbody id="updateBody"></tbody>
         </table>
@@ -194,53 +252,59 @@ tbody td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:
   </div>
 
 </div>
-
 <div class="toast" id="toast"></div>
 
 <script>
 let pdfBase64 = null;
-let extractedData = null;
+let extractedData = null;   // { numar_factura, data, produse: [...] }
+let chatHistory = [];
+let pendingChatProducts = []; // products suggested by chat, waiting confirmation
 
-// Drag & drop
+// ── Tab switching ──────────────────────────────────────────
+function switchTab(tab) {
+  ['pdf','chat'].forEach(t => {
+    document.getElementById('tab-btn-'+t).classList.toggle('active', t===tab);
+    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+  });
+  if (tab === 'chat') updateChatContextBanner();
+}
+
+function updateChatContextBanner() {
+  const count = extractedData?.produse?.length || 0;
+  const banner = document.getElementById('chatContextBanner');
+  const countEl = document.getElementById('chatContextCount');
+  if (count > 0) {
+    banner.classList.add('show');
+    countEl.textContent = count;
+    // Update welcome message to reflect context
+    const welcome = document.getElementById('chatWelcome');
+    if (welcome) {
+      welcome.innerHTML = `👋 Am încărcat <strong style="color:var(--gold-l)">${count} produse</strong> din factură în tabel.<br><br>
+      Ce vrei să adaugi în plus? Exemple:<br>
+      • <em>"sapun lichid Classic 1L: liliac, spring, portocale, câte 8 bucăți"</em><br>
+      • <em>"3 Softner ocean 5L"</em>`;
+    }
+  } else {
+    banner.classList.remove('show');
+  }
+}
+
+// ── PDF Upload ─────────────────────────────────────────────
 const zone = document.getElementById("uploadZone");
 zone.addEventListener("dragover", e => { e.preventDefault(); zone.classList.add("drag"); });
 zone.addEventListener("dragleave", () => zone.classList.remove("drag"));
 zone.addEventListener("drop", e => {
-  e.preventDefault();
-  zone.classList.remove("drag");
+  e.preventDefault(); zone.classList.remove("drag");
   const file = e.dataTransfer.files[0];
   if (file && file.type === "application/pdf") processFile(file);
 });
-
-function handleFile(input) {
-  if (input.files[0]) processFile(input.files[0]);
-}
-
+function handleFile(input) { if (input.files[0]) processFile(input.files[0]); }
 function processFile(file) {
   document.getElementById("fileName").textContent = "📎 " + file.name;
   zone.classList.add("has-file");
-
   const reader = new FileReader();
-  reader.onload = e => {
-    pdfBase64 = e.target.result.split(",")[1];
-    document.getElementById("extractBtn").disabled = false;
-  };
+  reader.onload = e => { pdfBase64 = e.target.result.split(",")[1]; document.getElementById("extractBtn").disabled = false; };
   reader.readAsDataURL(file);
-}
-
-function showLoading(text) {
-  document.getElementById("loadingText").textContent = text;
-  document.getElementById("loading").classList.add("show");
-}
-function hideLoading() {
-  document.getElementById("loading").classList.remove("show");
-}
-
-function showToast(msg, type = "") {
-  const t = document.getElementById("toast");
-  t.textContent = msg;
-  t.className = "toast show " + type;
-  setTimeout(() => t.className = "toast", 3500);
 }
 
 async function extractInvoice() {
@@ -249,118 +313,221 @@ async function extractInvoice() {
   document.getElementById("results").classList.remove("show");
   document.getElementById("updateResults").classList.remove("show");
   showLoading("Claude scanează factura PDF...");
-
   try {
     const res = await fetch("/api/extract", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pdf_base64: pdfBase64 })
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({pdf_base64:pdfBase64})
     });
     const data = await res.json();
     if (!data.success) throw new Error(data.error);
-
     extractedData = data.data;
+    // Reset chat history when new PDF loaded
+    chatHistory = [];
     renderResults(extractedData);
+    updateChatBadge();
     showToast("✅ Factură scanată cu succes!", "success");
-  } catch (e) {
+  } catch(e) {
     showToast("❌ Eroare: " + e.message, "error");
     document.getElementById("extractBtn").disabled = false;
+  } finally { hideLoading(); }
+}
+
+// ── Chat ───────────────────────────────────────────────────
+function addChatMsg(html, role) {
+  const win = document.getElementById("chatWindow");
+  const typing = document.getElementById("chatTyping");
+  const div = document.createElement("div");
+  div.className = "chat-msg " + role;
+  div.innerHTML = html;
+  win.insertBefore(div, typing);
+  win.scrollTop = win.scrollHeight;
+}
+function showTyping() { document.getElementById("chatTyping").classList.add("show"); document.getElementById("chatWindow").scrollTop=99999; }
+function hideTyping() { document.getElementById("chatTyping").classList.remove("show"); }
+
+async function sendChat() {
+  const input = document.getElementById("chatInput");
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = "";
+  document.getElementById("chatSendBtn").disabled = true;
+  addChatMsg(msg, "user");
+  showTyping();
+  chatHistory.push({role:"user", content:msg});
+
+  // Build context of existing products for the AI
+  const existingProducts = extractedData?.produse || [];
+
+  try {
+    const res = await fetch("/api/chat", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        history: chatHistory,
+        existing_products: existingProducts
+      })
+    });
+    const data = await res.json();
+    hideTyping();
+    if (!data.success) throw new Error(data.error);
+
+    addChatMsg(data.reply, "bot");
+    chatHistory.push({role:"assistant", content: data.reply_raw || data.reply});
+
+    // If AI returned confirmed products → merge into table
+    if (data.produse && data.produse.length > 0) {
+      mergeProductsIntoTable(data.produse);
+    }
+
+  } catch(e) {
+    hideTyping();
+    addChatMsg("❌ Eroare: " + e.message, "bot");
   } finally {
-    hideLoading();
+    document.getElementById("chatSendBtn").disabled = false;
+    document.getElementById("chatInput").focus();
   }
 }
 
+function mergeProductsIntoTable(newProducts) {
+  // Mark new products
+  newProducts.forEach(p => p._isNew = true);
+
+  if (!extractedData) {
+    extractedData = { numar_factura: "Manual", data: new Date().toLocaleDateString("ro-RO"), produse: [] };
+  }
+
+  // Add to existing
+  extractedData.produse = [...extractedData.produse, ...newProducts];
+
+  // Re-render table
+  renderResults(extractedData);
+  updateChatBadge();
+
+  // Switch to PDF tab to show table
+  switchTab('pdf');
+  setTimeout(() => {
+    document.getElementById("results").scrollIntoView({behavior:"smooth"});
+  }, 200);
+
+  showToast(`✅ ${newProducts.length} produse adăugate în tabel!`, "success");
+}
+
+function updateChatBadge() {
+  const newCount = (extractedData?.produse || []).filter(p => p._isNew).length;
+  const badge = document.getElementById("chatBadge");
+  if (newCount > 0) {
+    badge.textContent = "+" + newCount;
+    badge.classList.add("show");
+  } else {
+    badge.classList.remove("show");
+  }
+}
+
+// ── Render Results Table ───────────────────────────────────
 function renderResults(data) {
-  // Invoice info
+  const total = data.produse?.reduce((s,p)=>s+(p.cantitate||0),0)||0;
+  const newCount = data.produse?.filter(p=>p._isNew).length||0;
+
   document.getElementById("invoiceInfo").innerHTML = `
-    <div class="invoice-info-item"><label>Număr Factură</label><span>${data.numar_factura || "—"}</span></div>
-    <div class="invoice-info-item"><label>Data</label><span>${data.data || "—"}</span></div>
-    <div class="invoice-info-item"><label>Total Produse</label><span>${data.produse?.length || 0} linii</span></div>
-    <div class="invoice-info-item"><label>Total Unități</label><span>${data.produse?.reduce((s,p) => s + (p.cantitate||0), 0) || 0} buc</span></div>
+    <div class="invoice-info-item"><label>Număr Factură</label><span>${data.numar_factura||"—"}</span></div>
+    <div class="invoice-info-item"><label>Data</label><span>${data.data||new Date().toLocaleDateString("ro-RO")}</span></div>
+    <div class="invoice-info-item"><label>Total Linii</label><span>${data.produse?.length||0} ${newCount>0?'<span style="font-size:12px;color:var(--gold-l)">(+'+newCount+' adăugate manual)</span>':''}</span></div>
+    <div class="invoice-info-item"><label>Total Unități</label><span>${total} buc</span></div>
   `;
 
-  // Alerts
-  const missing = data.produse?.filter(p => !p.aroma) || [];
+  const missing = data.produse?.filter(p=>!p.aroma||p.aroma==='null'||p.aroma==='')||[];
+  const autoDetected = data.produse?.filter(p=>p.aroma&&p.aroma_auto)||[];
   let alertsHtml = "";
-  if (missing.length > 0) {
-    alertsHtml += `<div class="alert alert-warn">⚠️ <div><strong>${missing.length} produse</strong> fără aromă specificată în factură. Sistemul va potrivi primul rând disponibil — verifică manual după actualizare.</div></div>`;
-  }
-  alertsHtml += `<div class="alert alert-info">ℹ️ Verifică datele de mai jos înainte de a actualiza inventarul. Poți modifica cantitățile direct în tabel.</div>`;
+  if (missing.length>0)
+    alertsHtml += `<div class="alert alert-warn">⚠️ <div><strong>${missing.length} produse</strong> fără aromă — completează câmpurile portocalii.</div></div>`;
+  if (autoDetected.length>0)
+    alertsHtml += `<div class="alert alert-purple">🔍 <div><strong>${autoDetected.length} arome</strong> detectate automat din factură — verifică că sunt corecte.</div></div>`;
+  if (newCount>0)
+    alertsHtml += `<div class="alert alert-green">✏️ <div><strong>${newCount} produse</strong> adăugate manual prin chat — marcate cu <strong>NOU</strong> în tabel.</div></div>`;
+  alertsHtml += `<div class="alert alert-info">ℹ️ Completează aromele lipsă, verifică cantitățile și apasă <strong>Adaugă în Inventar</strong>.</div>`;
   document.getElementById("alerts").innerHTML = alertsHtml;
 
-  // Table
   const tbody = document.getElementById("productsBody");
   tbody.innerHTML = "";
   data.produse?.forEach((p, i) => {
-    const aromaHtml = p.aroma
-      ? `<strong>${p.aroma}</strong>`
-      : `<span class="aroma-missing">Nespecificată</span>`;
+    const hasAroma = p.aroma && p.aroma!=='null' && p.aroma!=='';
     tbody.innerHTML += `
-      <tr>
+      <tr class="${p._isNew?'new-row':''}">
         <td>${i+1}</td>
-        <td><code>${p.cod || "—"}</code></td>
-        <td>${p.nume || "—"}</td>
-        <td>${aromaHtml}</td>
-        <td>${p.dimensiune || "—"}</td>
-        <td><input type="number" value="${p.cantitate||0}" min="0" style="width:70px;padding:4px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px" onchange="extractedData.produse[${i}].cantitate=+this.value"></td>
+        <td><code>${p.cod||"—"}</code></td>
+        <td>${p.nume||"—"}</td>
+        <td>
+          <input type="text" class="aroma-input ${hasAroma?'filled':'missing'}"
+            value="${hasAroma?p.aroma:''}"
+            placeholder="Scrie aroma..."
+            onchange="updateAroma(${i},this.value)"
+            oninput="this.className='aroma-input '+(this.value.length>0?'filled':'missing')">
+          ${p.aroma_auto?'<div style="font-size:10px;color:var(--purple);margin-top:2px">🔍 auto-detectat</div>':''}
+        </td>
+        <td>${p.dimensiune||"—"}</td>
+        <td><input type="number" value="${p.cantitate||0}" min="0"
+          style="width:70px;padding:4px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px"
+          onchange="extractedData.produse[${i}].cantitate=+this.value"></td>
       </tr>`;
   });
 
   document.getElementById("results").classList.add("show");
+  document.getElementById("updateBtn").disabled = false;
 }
 
+function updateAroma(index, value) {
+  if (extractedData?.produse?.[index]) extractedData.produse[index].aroma = value;
+}
+
+// ── Update Sheets ──────────────────────────────────────────
 async function updateInventory() {
   if (!extractedData) return;
+  const missing = extractedData.produse.filter(p=>!p.aroma||p.aroma.trim()==="");
+  if (missing.length>0) {
+    const ok = confirm(`⚠️ ${missing.length} produse nu au aromă completată.\n\nContinui oricum? Sistemul va căuta primul rând potrivit cu cod și dimensiune.`);
+    if (!ok) return;
+  }
   document.getElementById("updateBtn").disabled = true;
   showLoading("Actualizez Google Sheets...");
-
   try {
     const res = await fetch("/api/update-sheet", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ produse: extractedData.produse })
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({produse:extractedData.produse})
     });
     const data = await res.json();
     if (!data.success) throw new Error(data.error);
-
     renderUpdateResults(data);
-    showToast(`✅ ${data.actualizate} produse adăugate în inventar!`, "success");
-  } catch (e) {
+    showToast(`✅ ${data.actualizate} produse actualizate!`, "success");
+  } catch(e) {
     showToast("❌ Eroare: " + e.message, "error");
     document.getElementById("updateBtn").disabled = false;
-  } finally {
-    hideLoading();
-  }
+  } finally { hideLoading(); }
 }
 
 function renderUpdateResults(data) {
   document.getElementById("summary").innerHTML = `
-    <div class="summary-card"><div class="summary-num green">${data.actualizate}</div><div class="summary-label">Produse actualizate</div></div>
-    <div class="summary-card"><div class="summary-num red">${data.negasite}</div><div class="summary-label">Negăsite (manual)</div></div>
-    <div class="summary-card"><div class="summary-num">${data.rezultate?.length || 0}</div><div class="summary-label">Total linii</div></div>
+    <div class="summary-card"><div class="summary-num green">${data.actualizate}</div><div class="summary-label">Actualizate</div></div>
+    <div class="summary-card"><div class="summary-num red">${data.negasite}</div><div class="summary-label">Negăsite</div></div>
+    <div class="summary-card"><div class="summary-num">${data.rezultate?.length||0}</div><div class="summary-label">Total linii</div></div>
   `;
-
   const tbody = document.getElementById("updateBody");
   tbody.innerHTML = "";
   data.rezultate?.forEach(r => {
-    const badge = r.status === "updated"
-      ? `<span class="badge badge-ok">✓ Actualizat</span>`
-      : `<span class="badge badge-warn">⚠️ Verifică manual</span>`;
-    tbody.innerHTML += `
-      <tr>
-        <td><code>${r.cod}</code></td>
-        <td>${r.nume || "—"}</td>
-        <td>${r.aroma || "—"}</td>
-        <td>${r.dimensiune || "—"}</td>
-        <td>+${r.cantitate_adaugata}</td>
-        <td>${r.stoc_nou !== undefined ? r.stoc_nou : "—"}</td>
-        <td>${badge}</td>
-      </tr>`;
+    const badge = r.status==="updated"
+      ?`<span class="badge badge-ok">✓ Actualizat</span>`
+      :`<span class="badge badge-warn">⚠️ Verifică manual</span>`;
+    tbody.innerHTML+=`<tr>
+      <td><code>${r.cod}</code></td><td>${r.nume||"—"}</td><td>${r.aroma||"—"}</td>
+      <td>${r.dimensiune||"—"}</td><td>+${r.cantitate_adaugata}</td>
+      <td>${r.stoc_nou!==undefined?r.stoc_nou:"—"}</td><td>${badge}</td>
+    </tr>`;
   });
-
   document.getElementById("updateResults").classList.add("show");
-  document.getElementById("updateResults").scrollIntoView({ behavior: "smooth" });
+  document.getElementById("updateResults").scrollIntoView({behavior:"smooth"});
 }
+
+function showLoading(t){document.getElementById("loadingText").textContent=t;document.getElementById("loading").classList.add("show");}
+function hideLoading(){document.getElementById("loading").classList.remove("show");}
+function showToast(msg,type=""){const t=document.getElementById("toast");t.textContent=msg;t.className="toast show "+type;setTimeout(()=>t.className="toast",3500);}
 </script>
 </body>
 </html>
