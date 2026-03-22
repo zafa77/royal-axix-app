@@ -17,7 +17,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .brand span{color:var(--gold)}
 .header-sub{margin-left:auto;font-size:12px;color:rgba(255,255,255,.5);letter-spacing:1px;text-transform:uppercase}
 
-.main{max-width:900px;margin:0 auto;padding:32px 20px}
+.main{max-width:960px;margin:0 auto;padding:32px 20px}
 
 .tabs{display:flex;gap:8px;margin-bottom:24px}
 .tab{flex:1;padding:12px;border:2px solid var(--border);border-radius:12px;background:var(--card);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;color:var(--muted);text-align:center;position:relative}
@@ -49,6 +49,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .btn-green{background:var(--green);color:var(--white)}
 .btn-green:hover{opacity:.9}
 .btn-green:disabled{opacity:.5;cursor:not-allowed}
+.btn-red{background:var(--red);color:var(--white)}
+.btn-red:hover{opacity:.9}
+.btn-red:disabled{opacity:.5;cursor:not-allowed}
+.btn-row{display:flex;gap:12px;margin-top:16px}
+.btn-row .btn{margin-top:0}
 
 .loading{display:none;text-align:center;padding:24px}
 .loading.show{display:block}
@@ -88,6 +93,7 @@ tbody tr.new-row td:first-child::after{content:'NOU';font-size:9px;background:va
 .alert-info{background:#e8f4fd;color:#1565C0;border:1px solid #b3d4f0}
 .alert-purple{background:var(--purple-bg);color:var(--purple);border:1px solid #d8b4fe}
 .alert-green{background:var(--green-bg);color:var(--green);border:1px solid #a7d7b5}
+.alert-red{background:var(--red-bg);color:var(--red);border:1px solid #f5c6c6}
 
 .summary{display:flex;gap:16px;margin-top:20px;flex-wrap:wrap}
 .summary-card{flex:1;min-width:140px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center}
@@ -101,19 +107,15 @@ tbody tr.new-row td:first-child::after{content:'NOU';font-size:9px;background:va
 .chat-msg{max-width:82%;padding:10px 14px;border-radius:12px;font-size:14px;line-height:1.6}
 .chat-msg.bot{background:var(--navy);color:var(--white);border-bottom-left-radius:4px;align-self:flex-start}
 .chat-msg.user{background:var(--gold);color:var(--navy);border-bottom-right-radius:4px;align-self:flex-end;font-weight:500}
-.chat-msg.bot em{color:var(--gold-l);font-style:normal}
-
 .chat-input-row{display:flex;gap:8px}
 .chat-input{flex:1;padding:12px 16px;border:1.5px solid var(--border);border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;transition:border-color .2s}
 .chat-input:focus{outline:none;border-color:var(--gold)}
 .chat-send{padding:12px 20px;background:var(--navy);color:var(--white);border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:background .2s;white-space:nowrap}
 .chat-send:hover{background:#2a4f8a}
 .chat-send:disabled{opacity:.5;cursor:not-allowed}
-
 .chat-context-banner{background:linear-gradient(135deg,var(--navy),#2a4f8a);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:rgba(255,255,255,.85);display:none}
 .chat-context-banner.show{display:block}
 .chat-context-banner strong{color:var(--gold-l)}
-
 .chat-typing{display:none;align-self:flex-start}
 .chat-typing.show{display:flex}
 .typing-wrap{background:var(--navy);padding:12px 16px;border-radius:12px;border-bottom-left-radius:4px;display:flex;gap:5px;align-items:center}
@@ -122,12 +124,17 @@ tbody tr.new-row td:first-child::after{content:'NOU';font-size:9px;background:va
 .typing-dot:nth-child(3){animation-delay:.3s}
 @keyframes typingBounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
 
+/* ISTORIC */
+.istoric-empty{text-align:center;padding:40px;color:var(--muted);font-size:14px}
+.istoric-refresh{float:right;padding:8px 16px;background:var(--navy);color:var(--white);border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;margin-bottom:16px}
+.istoric-refresh:hover{opacity:.9}
+
 .toast{position:fixed;bottom:24px;right:24px;background:var(--navy);color:var(--white);padding:14px 20px;border-radius:12px;font-size:14px;transform:translateY(100px);opacity:0;transition:all .3s;z-index:999;max-width:320px}
 .toast.show{transform:translateY(0);opacity:1}
 .toast.success{background:var(--green)}
 .toast.error{background:var(--red)}
 
-@media(max-width:600px){.invoice-info{flex-direction:column;gap:12px}.summary{flex-direction:column}.tabs{flex-direction:column}}
+@media(max-width:600px){.invoice-info{flex-direction:column;gap:12px}.summary{flex-direction:column}.tabs{flex-direction:column}.btn-row{flex-direction:column}}
 </style>
 </head>
 <body>
@@ -153,13 +160,14 @@ tbody tr.new-row td:first-child::after{content:'NOU';font-size:9px;background:va
     <button class="tab" id="tab-btn-chat" onclick="switchTab('chat')">💬 Adaugă Manual
       <span class="badge-count" id="chatBadge">0</span>
     </button>
+    <button class="tab" id="tab-btn-istoric" onclick="switchTab('istoric')">📋 Istoric</button>
   </div>
 
   <!-- TAB: PDF -->
   <div class="tab-content active" id="tab-pdf">
     <div class="card">
       <div class="card-title">📄 Încarcă Factura PDF</div>
-      <div class="card-sub">Sistemul extrage produsele și cantitățile automat. Aromele lipsă le completezi tu manual.</div>
+      <div class="card-sub">Sistemul extrage produsele și cantitățile automat. Aromele lipsă le completezi tu.</div>
       <div class="upload-zone" id="uploadZone">
         <input type="file" accept=".pdf" id="fileInput" onchange="handleFile(this)">
         <div class="upload-icon">📋</div>
@@ -177,20 +185,15 @@ tbody tr.new-row td:first-child::after{content:'NOU';font-size:9px;background:va
   <div class="tab-content" id="tab-chat">
     <div class="card">
       <div class="card-title">💬 Adaugă Produse Manual</div>
-      <div class="card-sub">Spune-mi ce produse vrei să adaugi și le adaug în tabelul de verificare.</div>
-
-      <!-- Context banner — shows when PDF products exist -->
+      <div class="card-sub">Spune-mi ce produse vrei să adaugi și le pregătesc pentru inventar.</div>
       <div class="chat-context-banner" id="chatContextBanner">
-        📋 Am <strong id="chatContextCount">0</strong> produse din factură în tabel.
-        Ce vrei să adaugi în plus?
+        📋 Am <strong id="chatContextCount">0</strong> produse din factură în tabel. Ce vrei să adaugi în plus?
       </div>
-
       <div class="chat-window" id="chatWindow">
         <div class="chat-msg bot" id="chatWelcome">👋 Salut! Spune-mi ce produse vrei să adaugi.<br><br>
         Exemple:<br>
         • <em>"sapun lichid Classic 1L: liliac, spring, portocale, câte 8 bucăți"</em><br>
-        • <em>"3 Softner ocean 5L și 5 Softner lavanda 5L"</em><br>
-        • <em>"18 Hipoclorit 1L fără parfum"</em>
+        • <em>"3 Softner ocean 5L și 5 Softner lavanda 5L"</em>
         </div>
         <div class="chat-typing" id="chatTyping">
           <div class="typing-wrap">
@@ -199,10 +202,22 @@ tbody tr.new-row td:first-child::after{content:'NOU';font-size:9px;background:va
         </div>
       </div>
       <div class="chat-input-row">
-        <input type="text" class="chat-input" id="chatInput"
-          placeholder="Ce produse vrei să adaugi?"
+        <input type="text" class="chat-input" id="chatInput" placeholder="Ce produse vrei să adaugi?"
           onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}">
         <button class="chat-send" id="chatSendBtn" onclick="sendChat()">Trimite ↵</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: ISTORIC -->
+  <div class="tab-content" id="tab-istoric">
+    <div class="card">
+      <div class="card-title">📋 Istoric Trimiteri</div>
+      <div class="card-sub">Toate trimiterile către Google Sheets.</div>
+      <button class="istoric-refresh" onclick="loadIstoric()">🔄 Reîncarcă</button>
+      <div style="clear:both"></div>
+      <div class="table-wrap" id="istoricTableWrap">
+        <div class="istoric-empty">Se încarcă istoricul...</div>
       </div>
     </div>
   </div>
@@ -228,9 +243,11 @@ tbody tr.new-row td:first-child::after{content:'NOU';font-size:9px;background:va
           <tbody id="productsBody"></tbody>
         </table>
       </div>
-      <button class="btn btn-green" id="updateBtn" onclick="updateInventory()" style="margin-top:20px" disabled>
-        📊 Adaugă în Inventar Google Sheets
-      </button>
+      <div class="btn-row">
+        <button class="btn btn-green" id="updateBtn" onclick="updateInventory()" disabled>
+          📊 Adaugă în Inventar Google Sheets
+        </button>
+      </div>
     </div>
   </div>
 
@@ -238,7 +255,10 @@ tbody tr.new-row td:first-child::after{content:'NOU';font-size:9px;background:va
   <div class="results" id="updateResults">
     <div class="card">
       <div class="card-title">📊 Inventar Actualizat!</div>
-      <div class="card-sub">Verifică Google Sheets-ul pentru modificări</div>
+      <div class="card-sub">Verifică Google Sheets-ul pentru modificări.</div>
+      <div id="undoAlert" style="display:none" class="alert alert-red">
+        ⚠️ <div>Ai observat o greșeală? <strong><button onclick="undoUpdate()" style="background:none;border:none;color:var(--red);font-weight:700;cursor:pointer;font-size:13px;text-decoration:underline">↩ Anulează ultima trimitere</button></strong> — restabilește stocurile anterioare.</div>
+      </div>
       <div class="summary" id="summary"></div>
       <div class="table-wrap" style="margin-top:20px">
         <table>
@@ -256,40 +276,32 @@ tbody tr.new-row td:first-child::after{content:'NOU';font-size:9px;background:va
 
 <script>
 let pdfBase64 = null;
-let extractedData = null;   // { numar_factura, data, produse: [...] }
+let extractedData = null;
 let chatHistory = [];
-let pendingChatProducts = []; // products suggested by chat, waiting confirmation
+let lastUndoLog = null; // Store undo data from last update
 
 // ── Tab switching ──────────────────────────────────────────
 function switchTab(tab) {
-  ['pdf','chat'].forEach(t => {
+  ['pdf','chat','istoric'].forEach(t => {
     document.getElementById('tab-btn-'+t).classList.toggle('active', t===tab);
     document.getElementById('tab-'+t).classList.toggle('active', t===tab);
   });
   if (tab === 'chat') updateChatContextBanner();
+  if (tab === 'istoric') loadIstoric();
 }
 
 function updateChatContextBanner() {
   const count = extractedData?.produse?.length || 0;
   const banner = document.getElementById('chatContextBanner');
-  const countEl = document.getElementById('chatContextCount');
-  if (count > 0) {
-    banner.classList.add('show');
-    countEl.textContent = count;
-    // Update welcome message to reflect context
-    const welcome = document.getElementById('chatWelcome');
-    if (welcome) {
-      welcome.innerHTML = `👋 Am încărcat <strong style="color:var(--gold-l)">${count} produse</strong> din factură în tabel.<br><br>
-      Ce vrei să adaugi în plus? Exemple:<br>
-      • <em>"sapun lichid Classic 1L: liliac, spring, portocale, câte 8 bucăți"</em><br>
-      • <em>"3 Softner ocean 5L"</em>`;
-    }
-  } else {
-    banner.classList.remove('show');
+  document.getElementById('chatContextCount').textContent = count;
+  banner.classList.toggle('show', count > 0);
+  const welcome = document.getElementById('chatWelcome');
+  if (welcome && count > 0) {
+    welcome.innerHTML = `👋 Am <strong style="color:var(--gold-l)">${count} produse</strong> din factură în tabel.<br><br>Ce vrei să adaugi în plus?`;
   }
 }
 
-// ── PDF Upload ─────────────────────────────────────────────
+// ── PDF ────────────────────────────────────────────────────
 const zone = document.getElementById("uploadZone");
 zone.addEventListener("dragover", e => { e.preventDefault(); zone.classList.add("drag"); });
 zone.addEventListener("dragleave", () => zone.classList.remove("drag"));
@@ -314,14 +326,10 @@ async function extractInvoice() {
   document.getElementById("updateResults").classList.remove("show");
   showLoading("Claude scanează factura PDF...");
   try {
-    const res = await fetch("/api/extract", {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({pdf_base64:pdfBase64})
-    });
+    const res = await fetch("/api/extract", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({pdf_base64:pdfBase64}) });
     const data = await res.json();
     if (!data.success) throw new Error(data.error);
     extractedData = data.data;
-    // Reset chat history when new PDF loaded
     chatHistory = [];
     renderResults(extractedData);
     updateChatBadge();
@@ -354,30 +362,17 @@ async function sendChat() {
   addChatMsg(msg, "user");
   showTyping();
   chatHistory.push({role:"user", content:msg});
-
-  // Build context of existing products for the AI
   const existingProducts = extractedData?.produse || [];
-
   try {
-    const res = await fetch("/api/chat", {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
-        history: chatHistory,
-        existing_products: existingProducts
-      })
-    });
+    const res = await fetch("/api/chat", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({history:chatHistory, existing_products:existingProducts}) });
     const data = await res.json();
     hideTyping();
     if (!data.success) throw new Error(data.error);
-
     addChatMsg(data.reply, "bot");
-    chatHistory.push({role:"assistant", content: data.reply_raw || data.reply});
-
-    // If AI returned confirmed products → merge into table
+    chatHistory.push({role:"assistant", content:data.reply_raw||data.reply});
     if (data.produse && data.produse.length > 0) {
       mergeProductsIntoTable(data.produse);
     }
-
   } catch(e) {
     hideTyping();
     addChatMsg("❌ Eroare: " + e.message, "bot");
@@ -388,88 +383,65 @@ async function sendChat() {
 }
 
 function mergeProductsIntoTable(newProducts) {
-  // Mark new products
   newProducts.forEach(p => p._isNew = true);
-
   if (!extractedData) {
     extractedData = { numar_factura: "Manual", data: new Date().toLocaleDateString("ro-RO"), produse: [] };
   }
-
-  // Add to existing
   extractedData.produse = [...extractedData.produse, ...newProducts];
-
-  // Re-render table
   renderResults(extractedData);
   updateChatBadge();
-
-  // Switch to PDF tab to show table
   switchTab('pdf');
-  setTimeout(() => {
-    document.getElementById("results").scrollIntoView({behavior:"smooth"});
-  }, 200);
-
+  setTimeout(() => document.getElementById("results").scrollIntoView({behavior:"smooth"}), 200);
   showToast(`✅ ${newProducts.length} produse adăugate în tabel!`, "success");
 }
 
 function updateChatBadge() {
-  const newCount = (extractedData?.produse || []).filter(p => p._isNew).length;
+  const newCount = (extractedData?.produse||[]).filter(p=>p._isNew).length;
   const badge = document.getElementById("chatBadge");
-  if (newCount > 0) {
-    badge.textContent = "+" + newCount;
-    badge.classList.add("show");
-  } else {
-    badge.classList.remove("show");
-  }
+  badge.textContent = "+" + newCount;
+  badge.classList.toggle("show", newCount > 0);
 }
 
-// ── Render Results Table ───────────────────────────────────
+// ── Render Results ─────────────────────────────────────────
 function renderResults(data) {
   const total = data.produse?.reduce((s,p)=>s+(p.cantitate||0),0)||0;
   const newCount = data.produse?.filter(p=>p._isNew).length||0;
-
   document.getElementById("invoiceInfo").innerHTML = `
     <div class="invoice-info-item"><label>Număr Factură</label><span>${data.numar_factura||"—"}</span></div>
     <div class="invoice-info-item"><label>Data</label><span>${data.data||new Date().toLocaleDateString("ro-RO")}</span></div>
-    <div class="invoice-info-item"><label>Total Linii</label><span>${data.produse?.length||0} ${newCount>0?'<span style="font-size:12px;color:var(--gold-l)">(+'+newCount+' adăugate manual)</span>':''}</span></div>
+    <div class="invoice-info-item"><label>Total Linii</label><span>${data.produse?.length||0}${newCount>0?' <span style="font-size:12px;color:var(--gold-l)">(+'+newCount+' manual)</span>':''}</span></div>
     <div class="invoice-info-item"><label>Total Unități</label><span>${total} buc</span></div>
   `;
-
   const missing = data.produse?.filter(p=>!p.aroma||p.aroma==='null'||p.aroma==='')||[];
   const autoDetected = data.produse?.filter(p=>p.aroma&&p.aroma_auto)||[];
   let alertsHtml = "";
-  if (missing.length>0)
-    alertsHtml += `<div class="alert alert-warn">⚠️ <div><strong>${missing.length} produse</strong> fără aromă — completează câmpurile portocalii.</div></div>`;
-  if (autoDetected.length>0)
-    alertsHtml += `<div class="alert alert-purple">🔍 <div><strong>${autoDetected.length} arome</strong> detectate automat din factură — verifică că sunt corecte.</div></div>`;
-  if (newCount>0)
-    alertsHtml += `<div class="alert alert-green">✏️ <div><strong>${newCount} produse</strong> adăugate manual prin chat — marcate cu <strong>NOU</strong> în tabel.</div></div>`;
-  alertsHtml += `<div class="alert alert-info">ℹ️ Completează aromele lipsă, verifică cantitățile și apasă <strong>Adaugă în Inventar</strong>.</div>`;
+  if (missing.length>0) alertsHtml+=`<div class="alert alert-warn">⚠️ <div><strong>${missing.length} produse</strong> fără aromă — completează câmpurile portocalii.</div></div>`;
+  if (autoDetected.length>0) alertsHtml+=`<div class="alert alert-purple">🔍 <div><strong>${autoDetected.length} arome</strong> detectate automat — verifică că sunt corecte.</div></div>`;
+  if (newCount>0) alertsHtml+=`<div class="alert alert-green">✏️ <div><strong>${newCount} produse</strong> adăugate manual — marcate cu NOU.</div></div>`;
+  alertsHtml+=`<div class="alert alert-info">ℹ️ Completează aromele lipsă, verifică cantitățile și apasă <strong>Adaugă în Inventar</strong>.</div>`;
   document.getElementById("alerts").innerHTML = alertsHtml;
 
   const tbody = document.getElementById("productsBody");
   tbody.innerHTML = "";
-  data.produse?.forEach((p, i) => {
+  data.produse?.forEach((p,i) => {
     const hasAroma = p.aroma && p.aroma!=='null' && p.aroma!=='';
-    tbody.innerHTML += `
-      <tr class="${p._isNew?'new-row':''}">
-        <td>${i+1}</td>
-        <td><code>${p.cod||"—"}</code></td>
-        <td>${p.nume||"—"}</td>
-        <td>
-          <input type="text" class="aroma-input ${hasAroma?'filled':'missing'}"
-            value="${hasAroma?p.aroma:''}"
-            placeholder="Scrie aroma..."
-            onchange="updateAroma(${i},this.value)"
-            oninput="this.className='aroma-input '+(this.value.length>0?'filled':'missing')">
-          ${p.aroma_auto?'<div style="font-size:10px;color:var(--purple);margin-top:2px">🔍 auto-detectat</div>':''}
-        </td>
-        <td>${p.dimensiune||"—"}</td>
-        <td><input type="number" value="${p.cantitate||0}" min="0"
-          style="width:70px;padding:4px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px"
-          onchange="extractedData.produse[${i}].cantitate=+this.value"></td>
-      </tr>`;
+    tbody.innerHTML+=`<tr class="${p._isNew?'new-row':''}">
+      <td>${i+1}</td>
+      <td><code>${p.cod||"—"}</code></td>
+      <td>${p.nume||"—"}</td>
+      <td>
+        <input type="text" class="aroma-input ${hasAroma?'filled':'missing'}"
+          value="${hasAroma?p.aroma:''}" placeholder="Scrie aroma..."
+          onchange="updateAroma(${i},this.value)"
+          oninput="this.className='aroma-input '+(this.value.length>0?'filled':'missing')">
+        ${p.aroma_auto?'<div style="font-size:10px;color:var(--purple);margin-top:2px">🔍 auto-detectat</div>':''}
+      </td>
+      <td>${p.dimensiune||"—"}</td>
+      <td><input type="number" value="${p.cantitate||0}" min="0"
+        style="width:70px;padding:4px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px"
+        onchange="extractedData.produse[${i}].cantitate=+this.value"></td>
+    </tr>`;
   });
-
   document.getElementById("results").classList.add("show");
   document.getElementById("updateBtn").disabled = false;
 }
@@ -483,18 +455,24 @@ async function updateInventory() {
   if (!extractedData) return;
   const missing = extractedData.produse.filter(p=>!p.aroma||p.aroma.trim()==="");
   if (missing.length>0) {
-    const ok = confirm(`⚠️ ${missing.length} produse nu au aromă completată.\n\nContinui oricum? Sistemul va căuta primul rând potrivit cu cod și dimensiune.`);
+    const ok = confirm(`⚠️ ${missing.length} produse nu au aromă completată.\n\nContinui oricum?`);
     if (!ok) return;
   }
   document.getElementById("updateBtn").disabled = true;
   showLoading("Actualizez Google Sheets...");
   try {
+    const sursa = extractedData.numar_factura === "Manual" ? "Chat manual" : "PDF";
     const res = await fetch("/api/update-sheet", {
       method:"POST", headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({produse:extractedData.produse})
+      body:JSON.stringify({
+        produse: extractedData.produse,
+        sursa: sursa,
+        nr_factura: extractedData.numar_factura || ""
+      })
     });
     const data = await res.json();
     if (!data.success) throw new Error(data.error);
+    lastUndoLog = data.undo_log; // Save for undo
     renderUpdateResults(data);
     showToast(`✅ ${data.actualizate} produse actualizate!`, "success");
   } catch(e) {
@@ -503,7 +481,32 @@ async function updateInventory() {
   } finally { hideLoading(); }
 }
 
+async function undoUpdate() {
+  if (!lastUndoLog || lastUndoLog.length === 0) {
+    showToast("❌ Nu există date de anulat.", "error");
+    return;
+  }
+  const ok = confirm(`⚠️ Ești sigur că vrei să anulezi ultima trimitere?\n\nSe vor restaura ${lastUndoLog.length} valori de stoc la valorile anterioare.`);
+  if (!ok) return;
+  showLoading("Se anulează trimiterea...");
+  try {
+    const res = await fetch("/api/undo", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({undo_log: lastUndoLog})
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    lastUndoLog = null;
+    document.getElementById("undoAlert").style.display = "none";
+    document.getElementById("updateResults").classList.remove("show");
+    showToast("✅ Trimiterea a fost anulată! Stocurile au fost restaurate.", "success");
+  } catch(e) {
+    showToast("❌ Eroare la anulare: " + e.message, "error");
+  } finally { hideLoading(); }
+}
+
 function renderUpdateResults(data) {
+  document.getElementById("undoAlert").style.display = "flex";
   document.getElementById("summary").innerHTML = `
     <div class="summary-card"><div class="summary-num green">${data.actualizate}</div><div class="summary-label">Actualizate</div></div>
     <div class="summary-card"><div class="summary-num red">${data.negasite}</div><div class="summary-label">Negăsite</div></div>
@@ -512,17 +515,42 @@ function renderUpdateResults(data) {
   const tbody = document.getElementById("updateBody");
   tbody.innerHTML = "";
   data.rezultate?.forEach(r => {
-    const badge = r.status==="updated"
-      ?`<span class="badge badge-ok">✓ Actualizat</span>`
-      :`<span class="badge badge-warn">⚠️ Verifică manual</span>`;
-    tbody.innerHTML+=`<tr>
-      <td><code>${r.cod}</code></td><td>${r.nume||"—"}</td><td>${r.aroma||"—"}</td>
-      <td>${r.dimensiune||"—"}</td><td>+${r.cantitate_adaugata}</td>
-      <td>${r.stoc_nou!==undefined?r.stoc_nou:"—"}</td><td>${badge}</td>
-    </tr>`;
+    const badge = r.status==="updated"?`<span class="badge badge-ok">✓ Actualizat</span>`:`<span class="badge badge-warn">⚠️ Verifică manual</span>`;
+    tbody.innerHTML+=`<tr><td><code>${r.cod}</code></td><td>${r.nume||"—"}</td><td>${r.aroma||"—"}</td><td>${r.dimensiune||"—"}</td><td>+${r.cantitate_adaugata}</td><td>${r.stoc_nou!==undefined?r.stoc_nou:"—"}</td><td>${badge}</td></tr>`;
   });
   document.getElementById("updateResults").classList.add("show");
   document.getElementById("updateResults").scrollIntoView({behavior:"smooth"});
+}
+
+// ── Istoric ────────────────────────────────────────────────
+async function loadIstoric() {
+  const wrap = document.getElementById("istoricTableWrap");
+  wrap.innerHTML = '<div class="istoric-empty">Se încarcă...</div>';
+  try {
+    const res = await fetch("/api/istoric");
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    if (!data.rows || data.rows.length === 0) {
+      wrap.innerHTML = '<div class="istoric-empty">📭 Nu există înregistrări încă.<br>Prima trimitere în Sheets va apărea aici.</div>';
+      return;
+    }
+    let html = `<table><thead><tr><th>Data</th><th>Ora</th><th>Sursă</th><th>Nr. Factură</th><th>Produse</th><th>Total Buc.</th><th>Status</th></tr></thead><tbody>`;
+    data.rows.forEach(r => {
+      html += `<tr>
+        <td>${r['Data']||"—"}</td>
+        <td>${r['Ora']||"—"}</td>
+        <td>${r['Sursa']||"—"}</td>
+        <td>${r['Nr. Factura']||"—"}</td>
+        <td>${r['Produse procesate']||"—"}</td>
+        <td>${r['Total bucati']||"—"}</td>
+        <td>${r['Status']||"—"}</td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+  } catch(e) {
+    wrap.innerHTML = `<div class="istoric-empty">❌ Eroare: ${e.message}</div>`;
+  }
 }
 
 function showLoading(t){document.getElementById("loadingText").textContent=t;document.getElementById("loading").classList.add("show");}
